@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Agency';
+  src: url('/fonts/Agency.ttf') format('truetype');
+  font-weight: thin;
+  font-style: thin;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -15,6 +22,7 @@
     --background-end-rgb: 0, 0, 0;
   }
 }
+/* globals.css ou outro arquivo CSS global */
 
 body {
   color: rgb(var(--foreground-rgb));
@@ -31,3 +39,6 @@ body {
     text-wrap: balance;
   }
 }
+
+
+

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Libre_Franklin } from "next/font/google";
 import "./globals.css";
+import Header from "../componentes/header";
 
-const inter = Inter({ subsets: ["latin"] });
+const franklin = Libre_Franklin({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,7 +17,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <head>
+        <title>BTCA</title>
+        <link rel="icon" href="/images/LogoBTCA-PNG.png"></link>
+      </head>
+      <body className="bg-[#1b1a16]">
+       <Header/>
+       <main className={franklin.className}>{children}</main>
+      </body>
     </html>
   );
 }

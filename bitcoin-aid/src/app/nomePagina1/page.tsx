@@ -27,7 +27,7 @@ export default function Stake() {
 
       <button
         onClick={handleLogin}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        className="bg-blue-500 hover:bg-black text-white font-bold py-2 px-4 rounded"
       >
         Login
       </button>
