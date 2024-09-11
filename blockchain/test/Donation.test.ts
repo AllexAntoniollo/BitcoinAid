@@ -11,11 +11,20 @@ describe("Donation", function () {
     const Token = await ethers.getContractFactory("BitcoinAid");
     const token = await Token.deploy();
     const tokenAddress = await token.getAddress();
-
+    const PaymentManager = await ethers.getContractFactory("PaymentManager");
+    const paymentManager = await PaymentManager.deploy(
+      tokenAddress,
+      owner.address
+    );
+    const paymentManagerAddress = await paymentManager.getAddress();
     const Donation = await ethers.getContractFactory("DonationBTCA");
-    const donation = await Donation.deploy(tokenAddress, owner.address);
+    const donation = await Donation.deploy(
+      tokenAddress,
+      owner.address,
+      paymentManagerAddress
+    );
     const donationAddress = await donation.getAddress();
-
+    await paymentManager.setDonation(donationAddress);
     await token.approve(donationAddress, ethers.parseUnits("1000000", "ether"));
     await donation.addDistributionFunds(ethers.parseUnits("1000000", "ether"));
     return {
@@ -24,6 +33,8 @@ describe("Donation", function () {
       donation,
       token,
       donationAddress,
+      paymentManager,
+      paymentManagerAddress,
     };
   }
 
@@ -159,6 +170,8 @@ describe("Donation", function () {
       donation,
       token,
       donationAddress,
+      paymentManager,
+      paymentManagerAddress,
     } = await loadFixture(deployFixture);
     await token.approve(
       donationAddress,
@@ -176,6 +189,12 @@ describe("Donation", function () {
 
     await donation.claimDonation();
 
+    expect(await token.balanceOf(paymentManagerAddress)).to.be.equal(
+      ethers.parseUnits("6.93", "ether")
+    );
+    expect(await paymentManager.balanceFree()).to.be.equal(
+      ethers.parseUnits("6.93", "ether")
+    );
     expect(await donation.distributionBalance()).to.be.equal(
       distributionBalance - ethers.parseUnits("140", "ether")
     );

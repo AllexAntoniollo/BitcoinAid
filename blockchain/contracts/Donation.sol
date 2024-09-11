@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IBurnable.sol";
+import "./IPaymentManager.sol";
 import "hardhat/console.sol";
 
 library Donation {
@@ -27,11 +28,17 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
 
     IBurnable private immutable token;
     uint256 public distributionBalance;
+    IPaymentManager public paymentManager;
 
     mapping(address => Donation.UserDonation) private users;
 
-    constructor(address _token, address initialOwner) Ownable(initialOwner) {
+    constructor(
+        address _token,
+        address initialOwner,
+        address _paymentManager
+    ) Ownable(initialOwner) {
         token = IBurnable(_token);
+        paymentManager = IPaymentManager(_paymentManager);
     }
 
     function addDistributionFunds(uint256 amount) external onlyOwner {
@@ -107,6 +114,8 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         distributionBalance -= totalValue;
 
         users[msg.sender].balance = 0;
+        paymentManager.incrementBalance(((totalValue / 20) * 99) / 100);
+        token.safeTransfer(address(paymentManager), totalValue / 20);
         token.safeTransfer(msg.sender, (totalValue * 95) / 100);
         emit UserClaimed(msg.sender, totalValue);
     }
