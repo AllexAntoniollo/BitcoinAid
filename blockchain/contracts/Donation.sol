@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IBurnable.sol";
+import "hardhat/console.sol";
 
 library Donation {
     struct UserDonation {
@@ -15,7 +16,7 @@ library Donation {
     }
 }
 
-contract DonationAidMut is ReentrancyGuard, Ownable {
+contract DonationBTCA is ReentrancyGuard, Ownable {
     using SafeERC20 for IBurnable;
 
     event UserDonated(address indexed user, uint amount);
@@ -33,13 +34,9 @@ contract DonationAidMut is ReentrancyGuard, Ownable {
         token = IBurnable(_token);
     }
 
-    function getContractPoolBalance() public view returns (uint) {
-        return token.balanceOf(address(this));
-    }
-
     function addDistributionFunds(uint256 amount) external onlyOwner {
         token.safeTransferFrom(msg.sender, address(this), amount);
-        distributionBalance += amount;
+        distributionBalance += (amount * 99) / 100;
     }
 
     function timeUntilNextWithdrawal(
@@ -65,7 +62,7 @@ contract DonationAidMut is ReentrancyGuard, Ownable {
             amountUsdt >= 10 ether,
             "Amount must be greater than 10 dollars"
         );
-        uint totalPool = getContractPoolBalance();
+        uint totalPool = distributionBalance;
 
         users[msg.sender].balance = amount;
         users[msg.sender].startedTimestamp = block.timestamp;
@@ -80,7 +77,7 @@ contract DonationAidMut is ReentrancyGuard, Ownable {
 
         token.safeTransferFrom(msg.sender, address(this), amount);
         token.burn(amount / 5);
-        token.safeTransfer(msg.sender, (amount * 3) / 10);
+        // token.safeTransfer(msg.sender, (amount * 3) / 10);
 
         emit UserDonated(msg.sender, amount);
     }
@@ -102,7 +99,6 @@ contract DonationAidMut is ReentrancyGuard, Ownable {
         }
 
         uint totalValue = calculateTotalValue(msg.sender);
-
         require(
             distributionBalance >= totalValue,
             "Insufficient distribution balance"
@@ -111,7 +107,7 @@ contract DonationAidMut is ReentrancyGuard, Ownable {
         distributionBalance -= totalValue;
 
         users[msg.sender].balance = 0;
-        token.safeTransfer(msg.sender, totalValue);
+        token.safeTransfer(msg.sender, (totalValue * 95) / 100);
         emit UserClaimed(msg.sender, totalValue);
     }
 
