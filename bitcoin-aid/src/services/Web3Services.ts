@@ -26,6 +26,7 @@ export async function balance(address:string) {
   const provider = await getProvider();
 
   const signer = await provider.getSigner();
+  
 
   //EX instancia de contrato
   const tokenContract = new ethers.Contract(TOKEN_ADDRESS ? TOKEN_ADDRESS : "", tokenAbi, signer);
