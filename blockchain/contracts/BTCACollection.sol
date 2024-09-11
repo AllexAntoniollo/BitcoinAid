@@ -30,13 +30,21 @@ contract BTCACollection is ERC1155, Ownable {
         if (currentBatch <= 7) {
             return 10 * (2 ** (currentBatch - 1));
         } else if (currentBatch <= 14) {
-            return (960 * (150 ** (currentBatch - 8))) / 100;
+            return
+                (960 * (150 ** (currentBatch - 8))) /
+                (100 ** (currentBatch - 8));
         } else if (currentBatch <= 21) {
-            return (13668 * (125 ** (currentBatch - 15))) / 100;
+            return
+                (1366875 * (125 ** (currentBatch - 15))) /
+                (100 ** (currentBatch - 15));
         } else if (currentBatch <= 29) {
-            return (58402 * (112 ** (currentBatch - 22))) / 100;
+            return
+                (5840241 * (112 ** (currentBatch - 22))) /
+                (100 ** (currentBatch - 22));
         } else {
-            return (129106 * (107 ** (currentBatch - 30))) / 100;
+            return
+                (13814675 * (107 ** (currentBatch - 30))) /
+                (100 ** (currentBatch - 30));
         }
     }
 

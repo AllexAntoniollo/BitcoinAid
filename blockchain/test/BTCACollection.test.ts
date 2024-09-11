@@ -3,6 +3,7 @@ import {
   time,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
+import { Log } from "ethers";
 import { ethers } from "hardhat";
 
 describe("BTCA Collection", function () {
@@ -37,5 +38,49 @@ describe("BTCA Collection", function () {
     await collection.mint(10);
     expect(await token.balanceOf(owner.address)).to.be.equal(890 * 10 ** 6);
     expect(await collection.balanceOf(owner.address, 1)).to.be.equal(11);
+  });
+  it("Should not mint nft exceeds max limit", async function () {
+    const { owner, otherAccount, token, collection, collectionAddress } =
+      await loadFixture(deployFixture);
+    await expect(collection.mint(101)).to.be.revertedWith(
+      "The batch limit was reached"
+    );
+  });
+  it("Should set URI", async function () {
+    const { owner, otherAccount, token, collection, collectionAddress } =
+      await loadFixture(deployFixture);
+    console.log(await collection.uri(1));
+
+    await collection.setURI("ipfs://");
+    console.log(await collection.uri(1));
+  });
+  it("Should mint NFTs in subsequent batches with correct prices", async function () {
+    const { owner, token, collection, collectionAddress } = await loadFixture(
+      deployFixture
+    );
+
+    await token.mint(ethers.parseUnits("100000000", "ether"));
+    await token.approve(
+      collectionAddress,
+      ethers.parseUnits("100000000", "ether")
+    );
+
+    async function getBatchPrice() {
+      return await collection.getCurrentBatchPrice();
+    }
+
+    for (let batch = 1; batch <= 40; batch++) {
+      const price = await getBatchPrice();
+
+      const amount = 100;
+      const totalPrice = price * BigInt(amount) * BigInt(10 ** 6);
+
+      await collection.mint(100);
+
+      expect(await collection.balanceOf(owner.address, batch)).to.be.equal(
+        amount
+      );
+      expect(await collection.currentBatch()).to.be.equal(batch + 1);
+    }
   });
 });
