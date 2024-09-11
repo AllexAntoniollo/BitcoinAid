@@ -1,5 +1,7 @@
 import { ethers } from "ethers";
+import tokenAbi from "./Token.abi.json";
 const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID;
+const TOKEN_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_ADDRESS;
 
 function getProvider() {
   if (!window.ethereum) throw new Error("No MetaMask found");
@@ -19,13 +21,37 @@ export async function doLogin() {
     throw error;
   }
 }
-export async function nomeDaFuncao() {
+
+export async function balance(address:string) {
   const provider = await getProvider();
 
   const signer = await provider.getSigner();
 
   //EX instancia de contrato
-  //const stakeContract = new ethers.Contract(STAKE_ADDRESS, StakeAbi, signer);
+  const tokenContract = new ethers.Contract(TOKEN_ADDRESS ? TOKEN_ADDRESS : "", tokenAbi, signer);
+
+  const balance = await tokenContract.balanceOf(address);
+
+  return balance;
+
+  //Ex chamando a função do contrato passando o parâmetro tokenId
+  //   const tx = await stakeContract.stake(tokenId);
+
+  //Espera a transação confirmar
+  //   await tx.wait();
+}
+
+
+export async function approve(spender:string, amount:number) {
+  const provider = await getProvider();
+
+  const signer = await provider.getSigner();
+
+  //EX instancia de contrato
+  const tokenContract = new ethers.Contract(TOKEN_ADDRESS ? TOKEN_ADDRESS : "", tokenAbi, signer);
+
+  await tokenContract.approve(spender, ethers.parseUnits(String(amount),"ether"));
+
 
   //Ex chamando a função do contrato passando o parâmetro tokenId
   //   const tx = await stakeContract.stake(tokenId);
