@@ -4,6 +4,7 @@ import Image from "next/image";
 import { doLogin } from "@/services/Web3Services";
 import Link from "next/link";
 import { useWallet } from "@/services/walletContext";
+import { FaBars } from "react-icons/fa";
 
 export default function Header() {
   const { address, setAddress } = useWallet();
@@ -89,7 +90,7 @@ export default function Header() {
         <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={80} height={80} className="max-w-[15%] max-h-[15%]" />
         <p className="font-Agency text-[18px] sm:text-[22px]">BTCAiD</p>
         <div className="ml-auto flex items-center">
-          <button onClick={toggleMenu} className="sm:hidden">Menu</button>
+          <button onClick={toggleMenu} className="sm:hidden mr-[12px]"><FaBars size={20}></FaBars></button>
           <p className="mr-[20px] hover:text-[#c5c5c5] hover:text-[17px] font-semibold hidden sm:block transition-all duration-300">Dashboard</p>
           <p className="mr-[20px] hover:text-[#c5c5c5] hover:text-[17px] font-semibold hidden sm:block transition-all duration-300">White Paper</p>
           {address ? (
