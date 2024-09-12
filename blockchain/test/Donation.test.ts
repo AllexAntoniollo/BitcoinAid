@@ -64,6 +64,32 @@ describe("Donation", function () {
       token,
       donationAddress,
     } = await loadFixture(deployFixture);
+    await donation.donate(ethers.parseUnits("100", "ether"), true);
+    await time.increase(60 * 60 * 24 * 10);
+    await donation.donate(ethers.parseUnits("100", "ether"), true);
+    await time.increase(60 * 60 * 24 * 10);
+    await expect(donation.claimDonation()).to.be.revertedWith(
+      "Tokens are still locked for 15 days"
+    );
+    const balance = await token.balanceOf(owner.address);
+
+    await time.increase(60 * 60 * 24 * 10);
+
+    await donation.claimDonation();
+
+    expect(await token.balanceOf(owner.address)).to.be.equal(
+      balance + ethers.parseUnits("225.72", "ether")
+    );
+  });
+  it("Should not create donation (minor than 10)", async function () {
+    const {
+      owner,
+      otherAccount,
+
+      donation,
+      token,
+      donationAddress,
+    } = await loadFixture(deployFixture);
 
     await expect(
       donation.donate(ethers.parseUnits("1", "ether"), true)

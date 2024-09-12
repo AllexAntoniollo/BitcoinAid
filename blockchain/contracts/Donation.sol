@@ -23,7 +23,8 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     event UserDonated(address indexed user, uint amount);
     event UserClaimed(address indexed user, uint amount);
 
-    uint24 public constant limitPeriod = 15 days;
+    uint24 public limitPeriod = 15 days;
+
     // IUniswapAidMut public uniswapOracle;
 
     IBurnable private immutable token;
@@ -44,6 +45,10 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     function addDistributionFunds(uint256 amount) external onlyOwner {
         token.safeTransferFrom(msg.sender, address(this), amount);
         distributionBalance += (amount * 99) / 100;
+    }
+
+    function changeMinTime(uint24 time) external {
+        limitPeriod = time;
     }
 
     function timeUntilNextWithdrawal(
@@ -71,7 +76,7 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         );
         uint totalPool = distributionBalance;
 
-        users[msg.sender].balance = amount;
+        users[msg.sender].balance += amount;
         users[msg.sender].startedTimestamp = block.timestamp;
         users[msg.sender].fifteenDays = fifteenDays;
         users[msg.sender].poolPaymentIndex = (totalPool >= 15e8 ether)
@@ -126,6 +131,39 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         Donation.UserDonation memory userDonation = users[_user];
         userDonation.balance = calculateTotalValue(_user);
         return userDonation;
+    }
+
+    function previewTotalValue(
+        address user
+    ) external view returns (uint balance) {
+        Donation.UserDonation memory userDonation = users[user];
+        uint percentage = 0;
+
+        if (userDonation.fifteenDays) {
+            if (userDonation.poolPaymentIndex == 0) {
+                percentage = 50;
+            } else if (userDonation.poolPaymentIndex == 1) {
+                percentage = 40;
+            } else if (userDonation.poolPaymentIndex == 2) {
+                percentage = 30;
+            } else if (userDonation.poolPaymentIndex == 3) {
+                percentage = 20;
+            }
+        } else {
+            if (userDonation.poolPaymentIndex == 0) {
+                percentage = 100;
+            } else if (userDonation.poolPaymentIndex == 1) {
+                percentage = 80;
+            } else if (userDonation.poolPaymentIndex == 2) {
+                percentage = 60;
+            } else if (userDonation.poolPaymentIndex == 3) {
+                percentage = 40;
+            }
+        }
+
+        balance =
+            userDonation.balance +
+            ((userDonation.balance * percentage) / 100);
     }
 
     function calculateTotalValue(
