@@ -14,7 +14,6 @@ export default function Home() {
   const [donateOpen, setDonateOpen] = useState(false);
   const [value, setValue] = useState('');
 
-
   const handleMaxClick = () => {
     if (balanceValue !== null) {
       setValue(ethers.formatEther(balanceValue));
@@ -136,7 +135,7 @@ export default function Home() {
                     <p className="text-[30px] font-Agency">Wallet Balance: ------</p>
                   )}
                   <p className="text-[25px] font-Agency">$235.62</p>
-                  <p className="text-[30px] font-Agency">Total Contribute: 00.0000 <span className="text-[#d79920]">AiD</span></p>
+                  <p className="text-[30px] font-Agency">Total Contributed: 00.0000 <span className="text-[#d79920]">AiD</span></p>
                   <p className="text-[25px] font-Agency">$00.00</p>
                 </div>
                 <div className="flex justify-center items-end pb-[20px]">
@@ -151,7 +150,7 @@ export default function Home() {
             <div className="p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[70%] lg:w-[45%] h-[500px] border-2 border-[#3a6e01] rounded-[3rem] mr-[40px] mt-[30px] lg:mt-[0px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
-              <p className="text-[30px] font-semibold">Contribute AiD</p>
+              <p className="text-[30px] font-semibold">Claim AiD</p>
               </div>
 
               <div className="flex justify-between flex-col items-center m-auto w-[95%] h-[300px] bg-[#434139] rounded-3xl ">
@@ -200,6 +199,7 @@ export default function Home() {
         
          
         ) : ("")}
+        <p>All Rigths Reserveds</p>
     </main>
   );   
 }
