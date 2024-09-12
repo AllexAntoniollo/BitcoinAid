@@ -74,27 +74,26 @@ describe("Queue Distribution", function () {
       queueAddress,
     } = await loadFixture(deployFixture);
 
-    await queue.addToQueue(1);
-    await queue.addToQueue(1);
-    await queue.addToQueue(1);
-    await queue.addToQueue(1);
+    await queue.addToQueue(1, 1);
+    await queue.addToQueue(1, 1);
+    await queue.addToQueue(1, 1);
+    await queue.addToQueue(1, 1);
 
     let queueDetails = await queue.getQueueDetails();
 
     await queue.removeFromQueue(1);
     queueDetails = await queue.getQueueDetails();
 
-    await queue.connect(otherAccount).addToQueue(1);
+    await queue.connect(otherAccount).addToQueue(1, 1);
     queueDetails = await queue.getQueueDetails();
 
     await queue.removeFromQueue(3);
     queueDetails = await queue.getQueueDetails();
 
-    await queue.addToQueue(1);
+    await queue.addToQueue(1, 1);
     queueDetails = await queue.getQueueDetails();
     printQueueDetails(queueDetails);
     await queue.removeFromQueue(6);
-    queueDetails = await queue.getQueueDetails();
-    printQueueDetails(queueDetails);
+    console.log(await queue.getQueueDetails());
   });
 });

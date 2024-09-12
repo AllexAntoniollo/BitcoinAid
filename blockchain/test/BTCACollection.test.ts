@@ -49,10 +49,8 @@ describe("BTCA Collection", function () {
   it("Should set URI", async function () {
     const { owner, otherAccount, token, collection, collectionAddress } =
       await loadFixture(deployFixture);
-    console.log(await collection.uri(1));
 
     await collection.setURI("ipfs://");
-    console.log(await collection.uri(1));
   });
   it("Should mint NFTs in subsequent batches with correct prices", async function () {
     const { owner, token, collection, collectionAddress } = await loadFixture(

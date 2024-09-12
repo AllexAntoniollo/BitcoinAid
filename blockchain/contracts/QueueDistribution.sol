@@ -2,16 +2,19 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "./IBTCACollection.sol";
 
 contract QueueDistribution is ERC1155Holder {
-    IERC1155 public BTCACollection;
+    IBTCACollection public BTCACollection;
 
     struct QueueEntry {
         address user;
         uint256 next;
         uint256 prev;
         uint256 index;
+        uint amount;
+        uint batchLevel;
+        //TODO: Dollars claimed
     }
 
     uint256 public head;
@@ -22,11 +25,11 @@ contract QueueDistribution is ERC1155Holder {
     mapping(uint256 => QueueEntry) public queue;
 
     constructor(address _collection) {
-        BTCACollection = IERC1155(_collection);
+        BTCACollection = IBTCACollection(_collection);
         currentIndex = 1;
     }
 
-    function addToQueue(uint256 tokenId) external {
+    function addToQueue(uint256 tokenId, uint amount) external {
         BTCACollection.safeTransferFrom(
             msg.sender,
             address(this),
@@ -39,7 +42,9 @@ contract QueueDistribution is ERC1155Holder {
             user: msg.sender,
             next: 0,
             prev: tail,
-            index: currentIndex
+            index: currentIndex,
+            amount: amount,
+            batchLevel: BTCACollection.getCurrentBatch()
         });
 
         if (queueSize == 0) {
@@ -56,7 +61,7 @@ contract QueueDistribution is ERC1155Holder {
     }
 
     function removeFromQueue(uint256 index) external {
-        require(index <= currentIndex, "Invalid index");
+        require(index <= currentIndex && index >= head, "Invalid index");
         require(
             queue[index].user == msg.sender,
             "You can only remove your own entry"

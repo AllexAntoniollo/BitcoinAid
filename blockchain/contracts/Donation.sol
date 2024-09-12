@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IBurnable.sol";
 import "./IPaymentManager.sol";
 import "hardhat/console.sol";
+import "./IUniswapOracle.sol";
 
 library Donation {
     struct UserDonation {
@@ -25,7 +26,7 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
 
     uint24 public limitPeriod = 15 days;
 
-    // IUniswapAidMut public uniswapOracle;
+    IUniswapOracle public uniswapOracle;
 
     IBurnable private immutable token;
     uint256 public distributionBalance;
@@ -36,10 +37,12 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     constructor(
         address _token,
         address initialOwner,
-        address _paymentManager
+        address _paymentManager,
+        address oracle
     ) Ownable(initialOwner) {
         token = IBurnable(_token);
         paymentManager = IPaymentManager(_paymentManager);
+        uniswapOracle = IUniswapOracle(oracle);
     }
 
     function addDistributionFunds(uint256 amount) external onlyOwner {
@@ -69,14 +72,12 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
 
     function donate(uint128 amount, bool fifteenDays) external nonReentrant {
         // uint amountUsdt = uniswapOracle.estimateAmountOut(amount);
-        uint amountUsdt = amount;
-        require(
-            amountUsdt >= 10 ether,
-            "Amount must be greater than 10 dollars"
-        );
+        uint amountUsdt = (uniswapOracle.returnPrice() * amount) / 1e18;
+
+        require(amountUsdt >= 10e6, "Amount must be greater than 10 dollars");
         uint totalPool = distributionBalance;
 
-        users[msg.sender].balance += amount;
+        users[msg.sender].balance += amountUsdt;
         users[msg.sender].startedTimestamp = block.timestamp;
         users[msg.sender].fifteenDays = fifteenDays;
         users[msg.sender].poolPaymentIndex = (totalPool >= 15e8 ether)
@@ -110,19 +111,29 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
             );
         }
 
-        uint totalValue = calculateTotalValue(msg.sender);
+        uint totalValueInUSD = calculateTotalValue(msg.sender);
         require(
-            distributionBalance >= totalValue,
+            distributionBalance >= totalValueInUSD,
             "Insufficient distribution balance"
         );
 
-        distributionBalance -= totalValue;
+        uint currentPrice = uniswapOracle.returnPrice();
+        uint totalTokensToSend = (totalValueInUSD * 1e18) / currentPrice;
+
+        require(
+            distributionBalance >= totalTokensToSend,
+            "Insufficient token balance for distribution"
+        );
+
+        distributionBalance -= totalTokensToSend;
 
         users[msg.sender].balance = 0;
-        paymentManager.incrementBalance(((totalValue / 20) * 99) / 100);
-        token.safeTransfer(address(paymentManager), totalValue / 20);
-        token.safeTransfer(msg.sender, (totalValue * 95) / 100);
-        emit UserClaimed(msg.sender, totalValue);
+
+        paymentManager.incrementBalance(((totalTokensToSend / 20) * 99) / 100);
+        token.safeTransfer(address(paymentManager), totalTokensToSend / 20);
+        token.safeTransfer(msg.sender, (totalTokensToSend * 95) / 100);
+
+        emit UserClaimed(msg.sender, totalTokensToSend);
     }
 
     function getUser(

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Contracts ^5.0.0
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
@@ -26,26 +25,26 @@ contract BTCACollection is ERC1155, Ownable {
         _setURI(newuri);
     }
 
-    function getCurrentBatchPrice() public view returns (uint256) {
-        if (currentBatch <= 7) {
-            return 10 * (2 ** (currentBatch - 1));
-        } else if (currentBatch <= 14) {
-            return
-                (960 * (150 ** (currentBatch - 8))) /
-                (100 ** (currentBatch - 8));
-        } else if (currentBatch <= 21) {
-            return
-                (1366875 * (125 ** (currentBatch - 15))) /
-                (100 ** (currentBatch - 15));
-        } else if (currentBatch <= 29) {
-            return
-                (5840241 * (112 ** (currentBatch - 22))) /
-                (100 ** (currentBatch - 22));
+    function getCurrentBatch() public view returns (uint) {
+        return currentBatch;
+    }
+
+    function getBatchPrice(uint batch) public pure returns (uint256) {
+        if (batch <= 7) {
+            return 10 * (2 ** (batch - 1));
+        } else if (batch <= 14) {
+            return (960 * (150 ** (batch - 8))) / (100 ** (batch - 8));
+        } else if (batch <= 21) {
+            return (1366875 * (125 ** (batch - 15))) / (100 ** (batch - 15));
+        } else if (batch <= 29) {
+            return (5840241 * (112 ** (batch - 22))) / (100 ** (batch - 22));
         } else {
-            return
-                (13814675 * (107 ** (currentBatch - 30))) /
-                (100 ** (currentBatch - 30));
+            return (13814675 * (107 ** (batch - 30))) / (100 ** (batch - 30));
         }
+    }
+
+    function getCurrentBatchPrice() public view returns (uint256) {
+        return getBatchPrice(currentBatch);
     }
 
     function mint(uint256 amount) public {

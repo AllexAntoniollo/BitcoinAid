@@ -16,12 +16,18 @@ describe("Donation", function () {
       tokenAddress,
       owner.address
     );
+
     const paymentManagerAddress = await paymentManager.getAddress();
+    const UniswapOracle = await ethers.getContractFactory("UniswapOracle");
+    const uniswapOracle = await UniswapOracle.deploy();
+    const uniswapOracleAddress = await uniswapOracle.getAddress();
+
     const Donation = await ethers.getContractFactory("DonationBTCA");
     const donation = await Donation.deploy(
       tokenAddress,
       owner.address,
-      paymentManagerAddress
+      paymentManagerAddress,
+      uniswapOracleAddress
     );
     const donationAddress = await donation.getAddress();
     await paymentManager.setDonation(donationAddress);
