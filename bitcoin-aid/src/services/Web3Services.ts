@@ -1,7 +1,9 @@
 import { ethers } from "ethers";
 import tokenAbi from "./Token.abi.json";
+import donationAbi from "./Donation.abi.json";
 const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID;
 const TOKEN_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_ADDRESS;
+const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
 
 function getProvider() {
   if (!window.ethereum) throw new Error("No MetaMask found");
@@ -59,4 +61,25 @@ export async function approve(spender:string, amount:number) {
 
   //Espera a transação confirmar
   //   await tx.wait();
+}
+
+export async function balanceDonationPool(){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const donationContract = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
+
+  const donationBalance = await donationContract.distributionBalance();
+  return donationBalance;
+}
+
+export async function userBalanceDonation(address:string){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const donationContract = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
+
+  const userDonationBalance = await donationContract.getUser(address);
+  console.log(userDonationBalance);
+  return userDonationBalance;
 }

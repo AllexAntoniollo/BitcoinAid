@@ -1,5 +1,5 @@
 "use client";
-import { balance, approve } from "@/services/Web3Services";
+import { balance, approve, balanceDonationPool, userBalanceDonation } from "@/services/Web3Services";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import Error from "@/componentes/erro";
@@ -7,8 +7,17 @@ import { useWallet } from "@/services/walletContext";
 import Image from "next/image";
 
 export default function Home() {
+  interface UserBalance {
+    amount: ethers.BigNumberish;
+    time: number;
+    level: number;
+    fifteen: boolean;
+  }
+  
   const [error, setError] = useState("");
+  const [poolBalanceValue, setPoolBalanceValue] = useState<number | null>(null);
   const [balanceValue, setBalanceValue] = useState<number | null>(null);
+  const [userBalanceValue, setUserBalanceValue] = useState<number | null>(null);
   const { address } = useWallet();
   const [isFifteenDays, setFifteenDays] = useState(true);
   const [donateOpen, setDonateOpen] = useState(false);
@@ -62,6 +71,33 @@ export default function Home() {
       setError("Erro ao buscar o saldo");
     }
   }
+async function getUserBalance(address:string){
+  try{
+    if(address){
+      const result = await userBalanceDonation(address);
+      if(result.amount !== null){
+        setUserBalanceValue(result[0]);
+      }
+      
+    }else{
+      const result = 0;
+    }
+  }catch(err){
+    setError("Erro ao buscar valor doado");
+  }
+}
+async function getPoolBalance(){
+    try{
+      const result = await balanceDonationPool();
+        if(result !== null){
+          setPoolBalanceValue(result);
+        }else{
+          setPoolBalanceValue(null);
+        }
+    } catch(err){
+      setError("Erro ao buscar o Donation Balance");
+    }
+  }
 
   useEffect(() => {
     async function fetchBalance() {
@@ -73,8 +109,14 @@ export default function Home() {
       }
       
     }
-
+    getPoolBalance();
     fetchBalance();
+    if(address){
+      getUserBalance(address);
+    }else{
+
+    }
+    
   }, [address]);
 
   console.log(balanceValue);
@@ -82,12 +124,15 @@ export default function Home() {
   return (
     <main className="w-100">
         {error && <Error msg={error} onClose={clearError} />}
-        <div className="container max-w-[98%] lg:max-w-[90%] m-auto flex flex-wrap items-center p-[30px] lg:p-[60px]">
-          <div className="transform translate-y-[300px] bg-[url('/images/Polygon_bg.png')]  bg-center z-[-1] inset-0 absolute"></div>
-          <div className="transform translate-y-[500px] bg-[url('/images/Polygon_bg.png')] bg-center z-[-1] inset-0 absolute"></div>
+        <div className="container min-h-screen max-w-[98%] lg:max-w-[90%] m-auto flex flex-wrap items-center p-[30px] lg:p-[60px]">
+          
           <p className="leading-tight font-Agency text-[70px] sm:text-[90px] font-normal w-full">Bitcoin AiD Protocol</p>
           <div className="mt-[50px] w-full lg:max-w-[40%] max-w-[100%] border-l-2 border-[#282722] p-8 ">
-            <p className="font-semibold text-[35px] lg:text-[46px] w-full">1.890 B</p>
+            {poolBalanceValue ? (
+              <p className="font-semibold text-[35px] lg:text-[46px] w-full">{ethers.formatEther(poolBalanceValue)}<span className="text-[#d79920]">AiD</span></p>
+            ) : (
+              <p className="font-semibold text-[35px] lg:text-[46px] w-full">----- <span className="text-[#d79920]">AiD</span></p>
+            )}
             <p className="text-[#d79920] text-[13px] lg:text-[18px] font-semibold ">Donation Pool</p>
           </div>
           <div className="mt-[30px] lg:mt-[50px] w-[100%] md:w-[60%] border-l-2 border-[#282722] p-8 ">
@@ -117,7 +162,7 @@ export default function Home() {
             )}
           </div>
           <div className="cards w-[100%] lg:flex mt-[50px]">
-            <div className="p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[70%] lg:w-[45%] h-[500px] border-2 border-[#d79920] rounded-[3rem] mr-[40px]">
+            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[70%] lg:w-[45%] h-[500px] border-2 border-[#d79920] rounded-[3rem] mr-[40px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
               <p className="text-[30px] font-semibold">Contribute AiD</p>
@@ -135,7 +180,12 @@ export default function Home() {
                     <p className="text-[30px] font-Agency">Wallet Balance: ------</p>
                   )}
                   <p className="text-[25px] font-Agency">$235.62</p>
-                  <p className="text-[30px] font-Agency">Total Contributed: 00.0000 <span className="text-[#d79920]">AiD</span></p>
+                  {userBalanceValue !== undefined && userBalanceValue !== null?(
+                    <p className="text-[30px] font-Agency">Total Contributed: {ethers.formatEther(userBalanceValue)} <span className="text-[#d79920]">AiD</span></p>
+                  ):(
+                    <p className="text-[30px] font-Agency">Total Contributed: ---- <span className="text-[#d79920]">AiD</span></p>
+                  )}
+                  
                   <p className="text-[25px] font-Agency">$00.00</p>
                 </div>
                 <div className="flex justify-center items-end pb-[20px]">
@@ -147,7 +197,7 @@ export default function Home() {
             </div>
 
 
-            <div className="p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[70%] lg:w-[45%] h-[500px] border-2 border-[#3a6e01] rounded-[3rem] mr-[40px] mt-[30px] lg:mt-[0px]">
+            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[70%] lg:w-[45%] h-[500px] border-2 border-[#3a6e01] rounded-[3rem] mr-[40px] mt-[30px] lg:mt-[0px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
               <p className="text-[30px] font-semibold">Claim AiD</p>
@@ -156,7 +206,12 @@ export default function Home() {
               <div className="flex justify-between flex-col items-center m-auto w-[95%] h-[300px] bg-[#434139] rounded-3xl ">
                 <div className="pt-[30px]">
                   <p className="font-Agency text-[30px]">CLAIMABLE REWARDS</p>
-                  <p className="font-Agency text-center text-[28px]">00.0000 <span className="text-[#d79920]">AiD</span></p>
+                  {userBalanceValue !== undefined && userBalanceValue !== null?(
+                     <p className="font-Agency text-center text-[28px]">{ethers.formatEther(userBalanceValue)}<span className="text-[#d79920]">AiD</span></p>
+                  ) : (
+                    <p className="font-Agency text-center text-[28px]">---- <span className="text-[#d79920]">AiD</span></p>
+                  )}
+                 
                   <p className="font-Agency text-center text-[23px]">$00.00</p>
                 </div>
                 <div className="flex flex-col justify-end items-center pb-[20px] w-full">
