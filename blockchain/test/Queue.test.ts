@@ -3,8 +3,8 @@ import {
   time,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { Log } from "ethers";
 import { ethers } from "hardhat";
+import { bigint } from "hardhat/internal/core/params/argumentTypes";
 
 describe("Queue Distribution", function () {
   async function deployFixture() {
@@ -13,24 +13,36 @@ describe("Queue Distribution", function () {
     const token = await Token.deploy();
     const tokenAddress = await token.getAddress();
 
+    const BTCA = await ethers.getContractFactory("BitcoinAid");
+    const btca = await BTCA.deploy();
+    const btcaAddress = await btca.getAddress();
+
     const BTCACollection = await ethers.getContractFactory("BTCACollection");
     const collection = await BTCACollection.deploy(owner.address, tokenAddress);
     const collectionAddress = await collection.getAddress();
 
+    const UniswapOracle = await ethers.getContractFactory("UniswapOracle");
+    const uniswapOracle = await UniswapOracle.deploy();
+    const uniswapOracleAddress = await uniswapOracle.getAddress();
+
     const Queue = await ethers.getContractFactory("QueueDistribution");
-    const queue = await Queue.deploy(collectionAddress);
+    const queue = await Queue.deploy(
+      collectionAddress,
+      btcaAddress,
+      uniswapOracleAddress
+    );
     const queueAddress = await queue.getAddress();
 
     await token.mint(1000 * 10 ** 6);
     await token.approve(collectionAddress, 1000 * 10 ** 6);
-    await collection.mint(10);
+    await collection.mint(20);
     await collection.setApprovalForAll(queueAddress, true);
 
     await token.connect(otherAccount).mint(1000 * 10 ** 6);
     await token
       .connect(otherAccount)
       .approve(collectionAddress, 1000 * 10 ** 6);
-    await collection.connect(otherAccount).mint(10);
+    await collection.connect(otherAccount).mint(20);
     await collection
       .connect(otherAccount)
       .setApprovalForAll(queueAddress, true);
@@ -43,10 +55,10 @@ describe("Queue Distribution", function () {
       collectionAddress,
       queue,
       queueAddress,
+      btca,
     };
   }
 
-  // Função para imprimir a fila de maneira organizada
   function printQueueDetails(queueDetails: any[]) {
     console.log("Current Queue:");
     if (queueDetails.length === 0) {
@@ -63,7 +75,7 @@ describe("Queue Distribution", function () {
     }
   }
 
-  it("Should add queue", async function () {
+  it("Should claim with 6 first index", async function () {
     const {
       owner,
       otherAccount,
@@ -72,28 +84,117 @@ describe("Queue Distribution", function () {
       collectionAddress,
       queue,
       queueAddress,
+      btca,
     } = await loadFixture(deployFixture);
-
+    await btca.transfer(queueAddress, ethers.parseUnits("150", "ether"));
+    await queue.incrementBalance(ethers.parseUnits("148.5", "ether"));
     await queue.addToQueue(1, 1);
     await queue.addToQueue(1, 1);
-    await queue.addToQueue(1, 1);
-    await queue.addToQueue(1, 1);
-
-    let queueDetails = await queue.getQueueDetails();
-
-    await queue.removeFromQueue(1);
-    queueDetails = await queue.getQueueDetails();
-
     await queue.connect(otherAccount).addToQueue(1, 1);
-    queueDetails = await queue.getQueueDetails();
-
-    await queue.removeFromQueue(3);
-    queueDetails = await queue.getQueueDetails();
-
+    await queue.connect(otherAccount).addToQueue(1, 1);
     await queue.addToQueue(1, 1);
-    queueDetails = await queue.getQueueDetails();
-    printQueueDetails(queueDetails);
-    await queue.removeFromQueue(6);
+    await queue.connect(otherAccount).addToQueue(1, 1);
+    expect(await queue.queueSize()).to.be.equal(6);
+    const balance = await btca.balanceOf(owner.address);
+
+    await queue.claim(1);
+
+    expect(await btca.balanceOf(owner.address)).to.be.within(
+      balance + ethers.parseUnits("99", "ether") - 10n,
+      balance + ethers.parseUnits("99", "ether") + 10n
+    );
+    expect(await queue.queueSize()).to.be.equal(2);
+    expect(await queue.tokensToWithdraw(otherAccount.address)).to.be.equal(
+      ethers.parseUnits("33.333333333333333333", "ether")
+    );
+  });
+  it("Should claim with 4", async function () {
+    const {
+      owner,
+      otherAccount,
+      token,
+      collection,
+      collectionAddress,
+      queue,
+      queueAddress,
+      btca,
+    } = await loadFixture(deployFixture);
+    await btca.transfer(queueAddress, ethers.parseUnits("150", "ether"));
+    await queue.incrementBalance(ethers.parseUnits("148.5", "ether"));
+    await queue.addToQueue(1, 1);
+    await queue.addToQueue(1, 1);
+    await queue.connect(otherAccount).addToQueue(1, 1);
+    await queue.connect(otherAccount).addToQueue(1, 1);
+
+    expect(await queue.queueSize()).to.be.equal(4);
+    const balance = await btca.balanceOf(owner.address);
+
+    await queue.claim(1);
+
+    expect(await btca.balanceOf(owner.address)).to.be.within(
+      balance + ethers.parseUnits("66", "ether") - 10n,
+      balance + ethers.parseUnits("66", "ether") + 10n
+    );
+    expect(await queue.queueSize()).to.be.equal(0);
+    expect(await queue.tokensToWithdraw(otherAccount.address)).to.be.equal(
+      ethers.parseUnits("66.666666666666666666", "ether")
+    );
+    await btca.transfer(queueAddress, ethers.parseUnits("150", "ether"));
+    await queue.incrementBalance(ethers.parseUnits("148.5", "ether"));
+    await queue.addToQueue(1, 1);
+    await queue.addToQueue(1, 1);
+    await queue.connect(otherAccount).addToQueue(1, 1);
+    await queue.connect(otherAccount).addToQueue(1, 1);
+
+    expect(await queue.queueSize()).to.be.equal(4);
+    const balance2 = await btca.balanceOf(owner.address);
+
+    await queue.claim(5);
+
+    expect(await btca.balanceOf(owner.address)).to.be.within(
+      balance2 + ethers.parseUnits("66", "ether") - 10n,
+      balance2 + ethers.parseUnits("66", "ether") + 10n
+    );
+    expect(await queue.queueSize()).to.be.equal(0);
+    expect(await queue.tokensToWithdraw(otherAccount.address)).to.be.equal(
+      ethers.parseUnits("66.666666666666666666", "ether") * 2n
+    );
+    await queue.connect(otherAccount).withdrawTokens();
+    expect(await btca.balanceOf(otherAccount.address)).to.be.equal(
+      ethers.parseUnits("131.999999999999999999", "ether")
+    );
+  });
+  it("Should claim with 30", async function () {
+    const {
+      owner,
+      otherAccount,
+      token,
+      collection,
+      collectionAddress,
+      queue,
+      queueAddress,
+      btca,
+    } = await loadFixture(deployFixture);
+    await btca.transfer(queueAddress, ethers.parseUnits("1500", "ether"));
+    await queue.incrementBalance(ethers.parseUnits("1485", "ether"));
+    for (let index = 0; index < 15; index++) {
+      await queue.addToQueue(1, 1);
+    }
+    for (let index = 0; index < 15; index++) {
+      await queue.connect(otherAccount).addToQueue(1, 1);
+    }
+    await queue.connect(otherAccount).claim(28);
+    expect(await queue.queueSize()).to.be.equal(22);
     console.log(await queue.getQueueDetails());
+    expect(await btca.balanceOf(otherAccount.address)).to.be.equal(
+      ethers.parseUnits("131.999999999999999999", "ether")
+    );
+    expect(await queue.tokensToWithdraw(owner.address)).to.be.equal(
+      ethers.parseUnits("133.333333333333333332", "ether")
+    );
+
+    expect(await queue.balanceFree()).that.be.equal(
+      ethers.parseUnits("1218.333333333333333336", "ether")
+    );
   });
 });

@@ -6,5 +6,5 @@ interface IUniswapOracle {
         uint128 amountIn
     ) external view returns (uint amountOut);
 
-    function returnPrice() external view returns (uint);
+    function returnPrice() external pure returns (uint);
 }

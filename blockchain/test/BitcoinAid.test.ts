@@ -38,6 +38,16 @@ describe("BitcoinAid", function () {
       ethers.parseUnits("0", "ether")
     );
   });
+  it("Should trasfer 99", async function () {
+    const { owner, otherAccount, contract } = await loadFixture(deployFixture);
+
+    await contract.transfer(
+      otherAccount.address,
+      ethers.parseUnits("99.99999999999", "ether")
+    );
+
+    console.log(await contract.balanceOf(otherAccount.address));
+  });
   it("Should trasferFrom", async function () {
     const { owner, otherAccount, contract } = await loadFixture(deployFixture);
 

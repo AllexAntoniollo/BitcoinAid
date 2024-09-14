@@ -78,7 +78,7 @@ contract UniswapOracle {
         return amountOut * 1e12;
     }
 
-    function returnPrice() external view returns (uint) {
-        return 9000000;
+    function returnPrice() external pure returns (uint) {
+        return 900000;
     }
 }

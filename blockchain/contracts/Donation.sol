@@ -8,6 +8,7 @@ import "./IBurnable.sol";
 import "./IPaymentManager.sol";
 import "hardhat/console.sol";
 import "./IUniswapOracle.sol";
+import "./IQueueDistribution.sol";
 
 library Donation {
     struct UserDonation {
@@ -27,10 +28,16 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     uint24 public limitPeriod = 15 days;
 
     IUniswapOracle public uniswapOracle;
-
     IBurnable private immutable token;
+
     uint256 public distributionBalance;
     IPaymentManager public paymentManager;
+    IQueueDistribution public queueDistribution;
+
+    uint256 public totalBurned;
+    uint256 public totalDistributedForUsers;
+    uint256 public totalForDevelopment;
+    uint256 public totalPaidToUsers;
 
     mapping(address => Donation.UserDonation) private users;
 
@@ -38,11 +45,13 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         address _token,
         address initialOwner,
         address _paymentManager,
-        address oracle
+        address oracle,
+        address queue
     ) Ownable(initialOwner) {
         token = IBurnable(_token);
         paymentManager = IPaymentManager(_paymentManager);
         uniswapOracle = IUniswapOracle(oracle);
+        queueDistribution = IQueueDistribution(queue);
     }
 
     function addDistributionFunds(uint256 amount) external onlyOwner {
@@ -71,7 +80,6 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     }
 
     function donate(uint128 amount, bool fifteenDays) external nonReentrant {
-        // uint amountUsdt = uniswapOracle.estimateAmountOut(amount);
         uint amountUsdt = (uniswapOracle.returnPrice() * amount) / 1e18;
 
         require(amountUsdt >= 10e6, "Amount must be greater than 10 dollars");
@@ -89,9 +97,15 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
             : 3;
 
         token.safeTransferFrom(msg.sender, address(this), amount);
-        token.burn(amount / 5);
-        // token.safeTransfer(msg.sender, (amount * 3) / 10);
 
+        uint256 burnedAmount = amount / 5;
+        token.burn(burnedAmount);
+        totalBurned += burnedAmount;
+
+        uint256 distributedAmount = (amount * 3) / 10;
+        totalDistributedForUsers += distributedAmount;
+        token.safeTransfer(address(queueDistribution), distributedAmount);
+        queueDistribution.incrementBalance((amount * 99) / 100);
         emit UserDonated(msg.sender, amount);
     }
 
@@ -129,9 +143,14 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
 
         users[msg.sender].balance = 0;
 
-        paymentManager.incrementBalance(((totalTokensToSend / 20) * 99) / 100);
-        token.safeTransfer(address(paymentManager), totalTokensToSend / 20);
-        token.safeTransfer(msg.sender, (totalTokensToSend * 95) / 100);
+        uint256 paymentManagerAmount = (totalTokensToSend / 20);
+        paymentManager.incrementBalance((paymentManagerAmount * 99) / 100);
+        token.safeTransfer(address(paymentManager), paymentManagerAmount);
+        totalForDevelopment += paymentManagerAmount;
+
+        uint256 userAmount = (totalTokensToSend * 95) / 100;
+        token.safeTransfer(msg.sender, userAmount);
+        totalPaidToUsers += userAmount;
 
         emit UserClaimed(msg.sender, totalTokensToSend);
     }

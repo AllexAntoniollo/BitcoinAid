@@ -10,10 +10,10 @@ describe("Donation", function () {
     const [owner, otherAccount] = await ethers.getSigners();
     const Token = await ethers.getContractFactory("BitcoinAid");
     const token = await Token.deploy();
-    const tokenAddress = await token.getAddress();
+    const btcaAddress = await token.getAddress();
     const PaymentManager = await ethers.getContractFactory("PaymentManager");
     const paymentManager = await PaymentManager.deploy(
-      tokenAddress,
+      btcaAddress,
       owner.address
     );
 
@@ -22,12 +22,29 @@ describe("Donation", function () {
     const uniswapOracle = await UniswapOracle.deploy();
     const uniswapOracleAddress = await uniswapOracle.getAddress();
 
+    const USDT = await ethers.getContractFactory("USDT");
+    const usdt = await USDT.deploy();
+    const tokenAddress = await usdt.getAddress();
+
+    const BTCACollection = await ethers.getContractFactory("BTCACollection");
+    const collection = await BTCACollection.deploy(owner.address, tokenAddress);
+    const collectionAddress = await collection.getAddress();
+
+    const Queue = await ethers.getContractFactory("QueueDistribution");
+    const queue = await Queue.deploy(
+      collectionAddress,
+      btcaAddress,
+      owner.address
+    );
+    const queueAddress = await queue.getAddress();
+
     const Donation = await ethers.getContractFactory("DonationBTCA");
     const donation = await Donation.deploy(
-      tokenAddress,
+      btcaAddress,
       owner.address,
       paymentManagerAddress,
-      uniswapOracleAddress
+      uniswapOracleAddress,
+      queueAddress
     );
     const donationAddress = await donation.getAddress();
     await paymentManager.setDonation(donationAddress);
@@ -58,7 +75,7 @@ describe("Donation", function () {
     );
     await donation.donate(ethers.parseUnits("100", "ether"), true);
     expect((await donation.getUser(owner.address)).balance).to.be.equal(
-      ethers.parseUnits("100", "ether")
+      90 * 10 ** 6
     );
   });
   it("Should create donation", async function () {
@@ -337,7 +354,7 @@ describe("Donation", function () {
     await donation.donate(ethers.parseUnits("1000000", "ether"), false);
     await time.increase(60 * 60 * 24 * 30);
     await expect(donation.claimDonation()).to.be.revertedWith(
-      "Insufficient distribution balance"
+      "Insufficient token balance for distribution"
     );
   });
 });
