@@ -64,10 +64,10 @@ export async function approve(spender:string, amount:number) {
 }
 
 export async function balanceDonationPool(){
-  const provider = await getProvider();
-  const signer = await provider.getSigner();
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
 
-  const donationContract = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
+
+  const donationContract = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, provider);
 
   const donationBalance = await donationContract.distributionBalance();
   return donationBalance;
@@ -80,6 +80,30 @@ export async function userBalanceDonation(address:string){
   const donationContract = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
 
   const userDonationBalance = await donationContract.getUser(address);
-  console.log(userDonationBalance);
   return userDonationBalance;
+}
+
+export async function timeUntilNextWithDrawal(address:string){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const donationContract = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
+
+  const timeUntil = await donationContract.timeUntilNextWithdrawal(address);
+  return timeUntil;
+}
+
+export async function claim(){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const donationContract = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
+  try{
+    const tx = await donationContract.claimDonation();
+    await tx.wait();
+    return true;
+  } catch{
+    console.log("erro ao claim");
+    return false;
+  }
 }

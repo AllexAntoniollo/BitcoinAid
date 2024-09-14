@@ -171,8 +171,11 @@ useEffect(() => {
     return () => clearInterval(intervalId);
   }, [time]);
   
-  console.log("time %d", time);
-  console.log("user balance value: %d", userBalanceValue);
+  useEffect(()=>{
+    if(address){
+      getTime(address);
+    }
+  })
 
   return (
     <main className="w-100">
@@ -270,7 +273,7 @@ useEffect(() => {
                 </div>
                 <div className="flex flex-col justify-end items-center pb-[20px] w-full">
                 <p className="text-center mb-[2px]">Time to Claim</p>
-                { time !== 0 || userBalanceValue == 0 ? (
+                { time !== 0 || userBalanceValue == 0 || userBalanceValue == undefined ? (
                   <>
                     <p className="text-center mb-[10px]">{Math.floor(time/86400)}D: {Math.floor(time/3600)}H: {Math.floor(time/60)}M: {Math.floor(time%60)}S</p>
                     <button className="cursor-default rounded-3xl text-[30px] font-Agency w-[80%] border-2 border-gray">
