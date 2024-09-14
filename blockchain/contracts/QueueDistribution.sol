@@ -18,25 +18,24 @@ contract QueueDistribution is ERC1155Holder {
         uint256 next;
         uint256 prev;
         uint256 index;
-        uint amount;
         uint batchLevel;
         uint dollarsClaimed;
         uint tokensToClaim;
     }
 
-    uint256 public head;
-    uint256 public tail;
-    uint256 public queueSize;
-    uint256 private currentIndex;
+    mapping(uint256 => uint256) public headByBatch;
+    mapping(uint256 => uint256) public tailByBatch;
+    mapping(uint256 => uint256) public queueSizeByBatch;
+    mapping(uint256 => mapping(uint256 => QueueEntry)) public queueByBatch;
+    uint public lastUnpaidQueue = 1;
 
     uint public balanceFree;
+    uint256 public currentIndex;
 
     IERC20 token;
 
-    QueueEntry[] public removedQueueEntries;
     mapping(address => uint256) public tokensToWithdraw;
 
-    mapping(uint256 => QueueEntry) public queue;
     IUniswapOracle public uniswapOracle;
 
     constructor(address _collection, address _token, address _oracle) {
@@ -46,7 +45,7 @@ contract QueueDistribution is ERC1155Holder {
         uniswapOracle = IUniswapOracle(_oracle);
     }
 
-    function addToQueue(uint256 tokenId, uint amount) external {
+    function addToQueue(uint256 tokenId) external {
         BTCACollection.safeTransferFrom(
             msg.sender,
             address(this),
@@ -55,27 +54,28 @@ contract QueueDistribution is ERC1155Holder {
             ""
         );
 
+        uint batchLevel = BTCACollection.getCurrentBatch();
         QueueEntry memory newEntry = QueueEntry({
             user: msg.sender,
             next: 0,
-            prev: tail,
+            prev: tailByBatch[batchLevel],
             index: currentIndex,
-            amount: amount,
-            batchLevel: BTCACollection.getCurrentBatch(),
+            batchLevel: batchLevel,
             dollarsClaimed: 0,
             tokensToClaim: 0
         });
 
-        if (queueSize == 0) {
-            head = currentIndex;
+        if (queueSizeByBatch[batchLevel] == 0) {
+            headByBatch[batchLevel] = currentIndex;
         } else {
-            queue[tail].next = currentIndex;
+            queueByBatch[batchLevel][tailByBatch[batchLevel]]
+                .next = currentIndex;
         }
 
-        queue[currentIndex] = newEntry;
-        tail = currentIndex;
+        queueByBatch[batchLevel][currentIndex] = newEntry;
+        tailByBatch[batchLevel] = currentIndex;
 
-        queueSize++;
+        queueSizeByBatch[batchLevel]++;
         currentIndex++;
     }
 
@@ -83,61 +83,75 @@ contract QueueDistribution is ERC1155Holder {
         balanceFree += amount;
     }
 
-    function claim(uint256 index) external {
+    function claim(uint256 index, uint queueId) external {
         require(
-            queueSize > 3,
-            "Queue must be even-sized and contain at least 4 users"
+            index >= headByBatch[queueId] && index <= tailByBatch[queueId],
+            "Invalid index"
         );
-        require(index >= head && index <= tail, "Invalid index");
         require(
-            queue[index].user == msg.sender,
+            queueByBatch[queueId][index].user == msg.sender,
             "You can only claim your own entry"
         );
 
         uint256 tokenPrice = uniswapOracle.returnPrice();
-        uint256 currentHead = head;
-        uint256 currentTail = tail;
-
-        while (
-            currentHead <= index && currentTail >= index && balanceFree > 0
-        ) {
-            if (head != index) {
-                processPaymentForIndex(head, tokenPrice);
+        uint256 currentHead = headByBatch[lastUnpaidQueue];
+        uint256 currentTail = tailByBatch[lastUnpaidQueue];
+        while (queueSizeByBatch[lastUnpaidQueue] > 0 && balanceFree > 0) {
+            if (headByBatch[lastUnpaidQueue] != index) {
+                processPaymentForIndex(
+                    headByBatch[lastUnpaidQueue],
+                    tokenPrice
+                );
             }
 
-            if (tail != index) {
-                processPaymentForIndex(tail, tokenPrice);
+            if (tailByBatch[lastUnpaidQueue] != index) {
+                processPaymentForIndex(
+                    tailByBatch[lastUnpaidQueue],
+                    tokenPrice
+                );
             }
 
-            if (head == currentHead) {
-                if (queue[currentHead].next != index) {
-                    processPaymentForIndex(queue[currentHead].next, tokenPrice);
+            if (headByBatch[lastUnpaidQueue] == currentHead) {
+                if (queueByBatch[lastUnpaidQueue][currentHead].next != index) {
+                    processPaymentForIndex(
+                        queueByBatch[lastUnpaidQueue][currentHead].next,
+                        tokenPrice
+                    );
                 }
             } else {
-                if (head != index) {
-                    processPaymentForIndex(head, tokenPrice);
+                if (headByBatch[lastUnpaidQueue] != index) {
+                    processPaymentForIndex(
+                        headByBatch[lastUnpaidQueue],
+                        tokenPrice
+                    );
                 }
             }
 
-            if (tail == currentTail) {
-                if (queue[currentTail].next != index) {
-                    console.log(queue[currentTail].prev);
-                    processPaymentForIndex(queue[currentTail].prev, tokenPrice);
+            if (tailByBatch[lastUnpaidQueue] == currentTail) {
+                if (queueByBatch[lastUnpaidQueue][currentTail].next != index) {
+                    processPaymentForIndex(
+                        queueByBatch[lastUnpaidQueue][currentTail].prev,
+                        tokenPrice
+                    );
                 }
             } else {
-                if (tail != index) {
-                    processPaymentForIndex(tail, tokenPrice);
+                if (tailByBatch[lastUnpaidQueue] != index) {
+                    processPaymentForIndex(
+                        tailByBatch[lastUnpaidQueue],
+                        tokenPrice
+                    );
                 }
             }
 
             if (currentHead == index || currentTail == index) {
                 break;
             }
-            currentHead = head;
-            currentTail = tail;
+            currentHead = headByBatch[lastUnpaidQueue];
+            currentTail = tailByBatch[lastUnpaidQueue];
         }
 
         processPaymentForIndex(index, tokenPrice);
+
         token.safeTransfer(msg.sender, tokensToWithdraw[msg.sender]);
         tokensToWithdraw[msg.sender] = 0;
     }
@@ -146,7 +160,7 @@ contract QueueDistribution is ERC1155Holder {
         uint256 current,
         uint256 tokenPrice
     ) internal {
-        QueueEntry storage entry = queue[current];
+        QueueEntry storage entry = queueByBatch[lastUnpaidQueue][current];
         uint256 batchPrice = BTCACollection.getBatchPrice(entry.batchLevel) *
             10 ** 6;
         uint256 maxClaim = (batchPrice * 3) - entry.dollarsClaimed;
@@ -163,53 +177,50 @@ contract QueueDistribution is ERC1155Holder {
         tokensToWithdraw[entry.user] += payableAmount;
 
         if (payableAmount == totalToClaim) {
-            removeFromQueue(current);
+            removeFromQueue(current, lastUnpaidQueue);
         }
 
         entry.dollarsClaimed += (payableAmount * tokenPrice) / 1e18;
     }
 
-    function removeFromQueue(uint256 index) internal {
-        require(index <= currentIndex && index >= head, "Invalid index");
-
-        QueueEntry storage entry = queue[index];
+    function removeFromQueue(uint256 index, uint queueId) internal {
+        QueueEntry storage entry = queueByBatch[queueId][index];
 
         if (entry.prev != 0) {
-            queue[entry.prev].next = entry.next;
+            queueByBatch[queueId][entry.prev].next = entry.next;
         } else {
-            head = entry.next;
+            headByBatch[queueId] = entry.next;
         }
 
         if (entry.next != 0) {
-            queue[entry.next].prev = entry.prev;
+            queueByBatch[queueId][entry.next].prev = entry.prev;
         } else {
-            tail = entry.prev;
+            tailByBatch[queueId] = entry.prev;
         }
 
-        removedQueueEntries.push(entry);
+        queueSizeByBatch[queueId]--;
+        if (
+            queueSizeByBatch[queueId] == 0 && queueSizeByBatch[queueId + 1] > 0
+        ) {
+            ++lastUnpaidQueue;
+        }
 
-        queueSize--;
-
-        delete queue[index];
+        delete queueByBatch[queueId][index];
     }
 
-    function getRemovedQueueEntries()
-        external
-        view
-        returns (QueueEntry[] memory)
-    {
-        return removedQueueEntries;
-    }
-
-    function getQueueDetails() external view returns (QueueEntry[] memory) {
-        QueueEntry[] memory queueDetails = new QueueEntry[](queueSize);
-        uint256 actual = head;
+    function getQueueDetails(
+        uint256 batchLevel
+    ) external view returns (QueueEntry[] memory) {
+        QueueEntry[] memory queueDetails = new QueueEntry[](
+            queueSizeByBatch[batchLevel]
+        );
+        uint256 actual = headByBatch[batchLevel];
         uint256 i = 0;
 
         while (actual != 0) {
-            queueDetails[i] = queue[actual];
+            queueDetails[i] = queueByBatch[batchLevel][actual];
             queueDetails[i].index = actual;
-            actual = queue[actual].next;
+            actual = queueByBatch[batchLevel][actual].next;
             i++;
         }
 
@@ -221,5 +232,22 @@ contract QueueDistribution is ERC1155Holder {
         require(amount > 0, "No tokens to withdraw");
         tokensToWithdraw[msg.sender] = 0;
         token.safeTransfer(msg.sender, amount);
+    }
+
+    function getIndicesByBatchLevel(
+        uint256 batchLevel
+    ) external view returns (uint256[] memory) {
+        uint256 queueSize = queueSizeByBatch[batchLevel];
+        uint256[] memory indices = new uint256[](queueSize);
+        uint256 current = headByBatch[batchLevel];
+        uint256 i = 0;
+
+        while (current != 0) {
+            indices[i] = current;
+            current = queueByBatch[batchLevel][current].next;
+            i++;
+        }
+
+        return indices;
     }
 }
