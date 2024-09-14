@@ -1,20 +1,16 @@
 "use client";
-import { balance, approve, balanceDonationPool, userBalanceDonation } from "@/services/Web3Services";
+import { balance, approve, balanceDonationPool, userBalanceDonation, timeUntilNextWithDrawal, claim } from "@/services/Web3Services";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import Error from "@/componentes/erro";
+import Alert from "@/componentes/alert";
 import { useWallet } from "@/services/walletContext";
 import Image from "next/image";
 
+
 export default function Home() {
-  interface UserBalance {
-    amount: ethers.BigNumberish;
-    time: number;
-    level: number;
-    fifteen: boolean;
-  }
-  
   const [error, setError] = useState("");
+  const [alert, setAlert] = useState("");
   const [poolBalanceValue, setPoolBalanceValue] = useState<number | null>(null);
   const [balanceValue, setBalanceValue] = useState<number | null>(null);
   const [userBalanceValue, setUserBalanceValue] = useState<number | null>(null);
@@ -22,6 +18,30 @@ export default function Home() {
   const [isFifteenDays, setFifteenDays] = useState(true);
   const [donateOpen, setDonateOpen] = useState(false);
   const [value, setValue] = useState('');
+  const [time, setTime] = useState<number>(0);
+  interface UserBalance {
+    amount: ethers.BigNumberish;
+    time: number;
+    level: number;
+    fifteen: boolean;
+  }
+  
+
+  async function Countdown(){
+    if(time > 0){      
+      setTime(prevValor => prevValor - 1)
+      console.log("chamou %d", Number(time));
+    }
+  }
+  async function getTime(address:string) {
+    try{
+      const result = await timeUntilNextWithDrawal(address);
+      setTime(Number(result));
+    }catch{
+      setError("Erro no getTime");
+    }
+      Countdown();
+  }
 
   const handleMaxClick = () => {
     if (balanceValue !== null) {
@@ -31,13 +51,12 @@ export default function Home() {
 
   const verifyValue = () => {
     const intValue = parseInt(value, 10);
-    if(balanceValue !== null){
-      const intBalanceValue = ethers.formatEther(balanceValue);
-      var finalBalance = parseInt(intBalanceValue, 10);
-    }else{
-      finalBalance = 0;
+    let finalBalance = 0;
+    if (balanceValue !== null) {
+      const intBalanceValue = parseInt(ethers.formatEther(balanceValue), 10);
+      finalBalance = intBalanceValue;
     }
-      if (balanceValue !== null && intValue > finalBalance) {
+    if (intValue > finalBalance) {
       setError("Você não pode enviar essa quantia de token");
       setDonateOpen(false);
     } else {
@@ -47,20 +66,23 @@ export default function Home() {
 
   const toggle = () => {
     setFifteenDays(prevState => !prevState);
-  }
+  };
 
-  const openDonate = () =>{
+  const openDonate = () => {
     setDonateOpen(prevState => !prevState);
-  }
+  };
 
   const clearError = () => {
     setError(""); // Limpa o erro
   };
 
+  const clearAlert = () => {
+    setAlert("");
+  };
+
   async function getBalance(address: string) {
     try {
       const result = await balance(address);
-      console.log(result);
       if (result !== undefined) {
         setBalanceValue(result);
       } else {
@@ -71,59 +93,91 @@ export default function Home() {
       setError("Erro ao buscar o saldo");
     }
   }
-async function getUserBalance(address:string){
-  try{
-    if(address){
-      const result = await userBalanceDonation(address);
-      if(result.amount !== null){
-        setUserBalanceValue(result[0]);
-      }
-      
-    }else{
-      const result = 0;
-    }
-  }catch(err){
-    setError("Erro ao buscar valor doado");
-  }
-}
-async function getPoolBalance(){
-    try{
-      const result = await balanceDonationPool();
-        if(result !== null){
-          setPoolBalanceValue(result);
-        }else{
-          setPoolBalanceValue(null);
+
+  async function getUserBalance(address: string) {
+    try {
+      if (address) {
+        const result = await userBalanceDonation(address);
+        if (result.amount !== null) {
+          setUserBalanceValue(result[0]);  // Corrigido para 'amount'
         }
-    } catch(err){
-      setError("Erro ao buscar o Donation Balance");
+      } else {
+        setUserBalanceValue(0); // Correção para lidar com endereços nulos
+      }
+    } catch (err) {
+      setError("Erro ao buscar valor doado");
     }
   }
 
-  useEffect(() => {
+  async function getPoolBalance() {
+    try {
+      const result = await balanceDonationPool();
+      if (result !== null) {
+        setPoolBalanceValue(result);
+      } else {
+        setPoolBalanceValue(null);
+      }
+    } catch (err) {
+      setPoolBalanceValue(0); // Correção para lidar com erros
+    }
+  }
+
+  async function doClaim() {
+    try{
+      const ok = await claim();
+      if(ok){
+        setAlert("Sucesso no Claim");
+      }
+    }catch{
+      setError("Erro ao realizar o Claim");
+    }
+  }
+
+useEffect(() => {
     async function fetchBalance() {
-      //await approve("0xaF6bdd5C107A1C98BB67293401683e02fA9983bB",1.5);
-      if(address){
+      if (address) {
         await getBalance(address);
-      }else if(!address){
+      } else {
         setBalanceValue(null);
       }
-      
     }
-    getPoolBalance();
+
     fetchBalance();
-    if(address){
+    getPoolBalance();
+    if (address) {
+      getTime(address);
       getUserBalance(address);
     }else{
-
+      setTime(0);
     }
-    
   }, [address]);
 
-  console.log(balanceValue);
+  useEffect(() => {
+    let start = Date.now(); // Obtém o tempo inicial
+    const interval = 1000; // Intervalo de 1 segundo
+  
+    const intervalId = setInterval(() => {
+      const now = Date.now(); 
+      const elapsed = now - start; // Tempo real decorrido
+      const remainingTime = Math.max(time - Math.floor(elapsed / 1000), 0); // Ajusta o tempo restante
+  
+      setTime(remainingTime); // Atualiza o estado do tempo
+      
+      if (remainingTime === 0) {
+        clearInterval(intervalId); // Para o intervalo quando o tempo chegar a 0
+      }
+    }, interval);
+  
+    return () => clearInterval(intervalId);
+  }, [time]);
+  
+  console.log("time %d", time);
+  console.log("user balance value: %d", userBalanceValue);
 
   return (
     <main className="w-100">
         {error && <Error msg={error} onClose={clearError} />}
+        {alert && <Alert msg={alert} onClose={clearAlert}/>}
         <div className="container min-h-screen max-w-[98%] lg:max-w-[90%] m-auto flex flex-wrap items-center p-[30px] lg:p-[60px]">
           
           <p className="leading-tight font-Agency text-[70px] sm:text-[90px] font-normal w-full">Bitcoin AiD Protocol</p>
@@ -216,10 +270,22 @@ async function getPoolBalance(){
                 </div>
                 <div className="flex flex-col justify-end items-center pb-[20px] w-full">
                 <p className="text-center mb-[2px]">Time to Claim</p>
-                  <p className="text-center mb-[10px]">00d 00h 00m 00s</p>
-                   <button className="rounded-3xl text-[30px] font-Agency w-[80%] border-2 border-[#3a6e01]">
-                      CLAIM
+                { time !== 0 || userBalanceValue == 0 ? (
+                  <>
+                    <p className="text-center mb-[10px]">{Math.floor(time/86400)}D: {Math.floor(time/3600)}H: {Math.floor(time/60)}M: {Math.floor(time%60)}S</p>
+                    <button className="cursor-default rounded-3xl text-[30px] font-Agency w-[80%] border-2 border-gray">
+                      <p className="text-gray">CLAIM</p>
                     </button>
+                  </>
+                ):(
+                  <>
+                    <p className="text-center mb-[10px]">00D:00H:00M:00S</p>
+                    <button onClick={doClaim} className="rounded-3xl text-[30px] font-Agency w-[80%] border-2 border-[#3a6e01] hover:bg-[#424039]">
+                      <p className="text-[#3a6e01]">CLAIM</p>
+                    </button>
+                  </>
+                )}
+                
                 </div>    
               </div>
             </div>
