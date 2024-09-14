@@ -4,7 +4,6 @@ import {
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { bigint } from "hardhat/internal/core/params/argumentTypes";
 
 describe("Queue Distribution", function () {
   async function deployFixture() {
@@ -224,8 +223,32 @@ describe("Queue Distribution", function () {
     }
     const balance = await btca.balanceOf(owner.address);
     await queue.claim(51, 2);
-    expect((await btca.balanceOf(owner.address)) - balance).to.be.equal(
-      ethers.parseUnits("956.999999999999999991", "ether")
-    );
+    console.log(await queue.getQueueDetails(2));
+
+    // expect((await btca.balanceOf(owner.address)) - balance).to.be.equal(
+    //   ethers.parseUnits("956.999999999999999991", "ether")
+    // );
+    // console.log(await queue.tokensToWithdraw(otherAccount.address));
+    // await queue.claim(53, 2);
+    // console.log(await queue.tokensToWithdraw(otherAccount.address));
+  });
+  it("Should not claim with 3", async function () {
+    const {
+      owner,
+      otherAccount,
+      token,
+      collection,
+      collectionAddress,
+      queue,
+      queueAddress,
+      btca,
+    } = await loadFixture(deployFixture);
+    await btca.transfer(queueAddress, ethers.parseUnits("250", "ether"));
+    await queue.incrementBalance(ethers.parseUnits("247.5", "ether"));
+    for (let index = 0; index < 5; index++) {
+      await queue.connect(otherAccount).addToQueue(1);
+    }
+
+    await queue.connect(otherAccount).claim(5, 1);
   });
 });

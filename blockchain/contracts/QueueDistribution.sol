@@ -20,8 +20,8 @@ contract QueueDistribution is ERC1155Holder {
         uint256 index;
         uint batchLevel;
         uint dollarsClaimed;
-        uint tokensToClaim;
     }
+    uint public totalNFTsInQueue;
 
     mapping(uint256 => uint256) public headByBatch;
     mapping(uint256 => uint256) public tailByBatch;
@@ -61,8 +61,7 @@ contract QueueDistribution is ERC1155Holder {
             prev: tailByBatch[batchLevel],
             index: currentIndex,
             batchLevel: batchLevel,
-            dollarsClaimed: 0,
-            tokensToClaim: 0
+            dollarsClaimed: 0
         });
 
         if (queueSizeByBatch[batchLevel] == 0) {
@@ -76,6 +75,8 @@ contract QueueDistribution is ERC1155Holder {
         tailByBatch[batchLevel] = currentIndex;
 
         queueSizeByBatch[batchLevel]++;
+        totalNFTsInQueue++;
+
         currentIndex++;
     }
 
@@ -94,14 +95,26 @@ contract QueueDistribution is ERC1155Holder {
         );
 
         uint256 tokenPrice = uniswapOracle.returnPrice();
+
+        uint256 requiredBalance = getRequiredBalanceForNextFour();
+        require(
+            balanceFree >= requiredBalance,
+            "Not enough balance to process payment for 4 entries"
+        );
+
         uint256 currentHead = headByBatch[lastUnpaidQueue];
         uint256 currentTail = tailByBatch[lastUnpaidQueue];
+        bool foundClaimedEntry = false;
+
         while (queueSizeByBatch[lastUnpaidQueue] > 0 && balanceFree > 0) {
+            require(totalNFTsInQueue >= 4, "Minimum 4 nfts to claim prizes");
             if (headByBatch[lastUnpaidQueue] != index) {
                 processPaymentForIndex(
                     headByBatch[lastUnpaidQueue],
                     tokenPrice
                 );
+            } else {
+                foundClaimedEntry = true;
             }
 
             if (tailByBatch[lastUnpaidQueue] != index) {
@@ -109,6 +122,8 @@ contract QueueDistribution is ERC1155Holder {
                     tailByBatch[lastUnpaidQueue],
                     tokenPrice
                 );
+            } else {
+                foundClaimedEntry = true;
             }
 
             if (headByBatch[lastUnpaidQueue] == currentHead) {
@@ -117,6 +132,8 @@ contract QueueDistribution is ERC1155Holder {
                         queueByBatch[lastUnpaidQueue][currentHead].next,
                         tokenPrice
                     );
+                } else {
+                    foundClaimedEntry = true;
                 }
             } else {
                 if (headByBatch[lastUnpaidQueue] != index) {
@@ -124,15 +141,18 @@ contract QueueDistribution is ERC1155Holder {
                         headByBatch[lastUnpaidQueue],
                         tokenPrice
                     );
+                } else {
+                    foundClaimedEntry = true;
                 }
             }
-
             if (tailByBatch[lastUnpaidQueue] == currentTail) {
                 if (queueByBatch[lastUnpaidQueue][currentTail].next != index) {
                     processPaymentForIndex(
                         queueByBatch[lastUnpaidQueue][currentTail].prev,
                         tokenPrice
                     );
+                } else {
+                    foundClaimedEntry = true;
                 }
             } else {
                 if (tailByBatch[lastUnpaidQueue] != index) {
@@ -140,10 +160,12 @@ contract QueueDistribution is ERC1155Holder {
                         tailByBatch[lastUnpaidQueue],
                         tokenPrice
                     );
+                } else {
+                    foundClaimedEntry = true;
                 }
             }
 
-            if (currentHead == index || currentTail == index) {
+            if (foundClaimedEntry) {
                 break;
             }
             currentHead = headByBatch[lastUnpaidQueue];
@@ -154,6 +176,39 @@ contract QueueDistribution is ERC1155Holder {
 
         token.safeTransfer(msg.sender, tokensToWithdraw[msg.sender]);
         tokensToWithdraw[msg.sender] = 0;
+    }
+
+    function getRequiredBalanceForNextFour() internal view returns (uint256) {
+        uint256 tokenPrice = uniswapOracle.returnPrice();
+        uint256 totalRequiredBalance = 0;
+        uint256 counter = 0;
+        uint256 currentBatch = lastUnpaidQueue;
+        uint256 currentHead = headByBatch[currentBatch];
+
+        while (counter < 4 && currentBatch <= lastUnpaidQueue + 1) {
+            while (currentHead != 0 && counter < 4) {
+                QueueEntry storage entry = queueByBatch[currentBatch][
+                    currentHead
+                ];
+                uint256 batchPrice = BTCACollection.getBatchPrice(
+                    entry.batchLevel
+                ) * 10 ** 6;
+                uint256 maxClaim = (batchPrice * 3) - entry.dollarsClaimed;
+                uint256 totalToClaim = (maxClaim * 1e18) / tokenPrice;
+
+                totalRequiredBalance += totalToClaim;
+
+                currentHead = queueByBatch[currentBatch][currentHead].next;
+                counter++;
+            }
+
+            if (counter < 4) {
+                currentBatch++;
+                currentHead = headByBatch[currentBatch];
+            }
+        }
+
+        return totalRequiredBalance;
     }
 
     function processPaymentForIndex(
@@ -173,7 +228,6 @@ contract QueueDistribution is ERC1155Holder {
 
         balanceFree -= payableAmount;
 
-        entry.tokensToClaim += payableAmount;
         tokensToWithdraw[entry.user] += payableAmount;
 
         if (payableAmount == totalToClaim) {
@@ -199,6 +253,8 @@ contract QueueDistribution is ERC1155Holder {
         }
 
         queueSizeByBatch[queueId]--;
+        totalNFTsInQueue--;
+
         if (
             queueSizeByBatch[queueId] == 0 && queueSizeByBatch[queueId + 1] > 0
         ) {
