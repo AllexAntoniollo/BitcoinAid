@@ -278,5 +278,6 @@ describe("Queue Distribution", function () {
     console.log(await queue.getQueueDetails(1));
     console.log(await queue.getQueueDetails(2));
     console.log(await queue.getQueueDetails(3));
+    console.log(await btca.balanceOf(otherAccount.address));
   });
 });

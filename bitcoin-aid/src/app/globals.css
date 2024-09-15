@@ -31,11 +31,9 @@ input[type="number"] {
   background: #d79940; /* Cor da parte deslizante quando o usuário passa o mouse sobre ela */
 }
 
-
-
 @font-face {
-  font-family: 'Agency';
-  src: url('/fonts/Agency.ttf') format('truetype');
+  font-family: "Agency";
+  src: url("/fonts/Agency.ttf") format("truetype");
   font-weight: thin;
   font-style: thin;
 }
@@ -71,5 +69,61 @@ body {
   }
 }
 
+.caixa3d::before {
+  content: "";
+  width: 255px;
+  height: calc(0.192 * 200px);
+  position: absolute;
+  top: calc(-0.192 * 200px);
+  left: calc(-0.16 * 170px);
+  background-color: #232838;
+  transform: skew(40deg);
+  transform-origin: top;
+  transition: transform 1s, left 1s;
+}
 
+.caixa3d::after {
+  content: "";
+  width: calc(0.16 * 230px);
+  height: 205px;
+  position: absolute;
+  top: calc(-0.096 * 224px);
+  left: calc(-0.16 * 200px);
+  background-color: #191c27;
+  z-index: -1;
+  transform: skewY(50deg);
+  transform-origin: top;
+  transition: transform 1s, left 1s;
+}
+.nftPiscando {
+  background: repeating-linear-gradient(
+    to right,
+    rgb(85, 75, 69),
+    rgb(85, 75, 69) 0.212%,
+    rgb(125, 125, 1) 0.212%,
+    rgb(125, 125, 1) 17.176%,
+    rgb(125, 125, 1) 16.8433%,
+    rgb(125, 125, 1) 33.142%,
+    rgb(125, 125, 1) 33.4747%,
+    rgb(125, 125, 1) 50.106%,
+    rgb(125, 125, 1) 50.106%,
+    rgb(125, 125, 1) 67.07%,
+    rgb(125, 125, 1) 66.7373%,
+    rgb(132, 125, 2) 83.036%,
+    rgb(132, 125, 2) 83.3687%,
+    rgb(140, 125, 4) 100%
+  );
+  animation: piscar 2s infinite;
+}
 
+@keyframes piscar {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5; /* Diminui a opacidade no meio */
+  }
+  100% {
+    opacity: 1;
+  }
+}
