@@ -103,38 +103,49 @@ contract QueueDistribution is ERC1155Holder {
         );
 
         uint256 currentHead = headByBatch[lastUnpaidQueue];
-        uint256 currentTail = tailByBatch[lastUnpaidQueue];
+        uint256 currentTail;
         bool foundClaimedEntry = false;
+        bool swap = false;
 
         while (queueSizeByBatch[lastUnpaidQueue] > 0 && balanceFree > 0) {
             require(totalNFTsInQueue >= 4, "Minimum 4 nfts to claim prizes");
+
             if (headByBatch[lastUnpaidQueue] != index) {
                 processPaymentForIndex(
                     headByBatch[lastUnpaidQueue],
                     tokenPrice
                 );
             } else {
+                if (queueSizeByBatch[lastUnpaidQueue] <= 3) {
+                    swap = true;
+                    processPaymentForIndex(
+                        headByBatch[lastUnpaidQueue],
+                        tokenPrice
+                    );
+                }
                 foundClaimedEntry = true;
             }
-
+            currentTail = tailByBatch[lastUnpaidQueue];
             if (tailByBatch[lastUnpaidQueue] != index) {
                 processPaymentForIndex(
                     tailByBatch[lastUnpaidQueue],
                     tokenPrice
                 );
             } else {
-                foundClaimedEntry = true;
-            }
-
-            if (headByBatch[lastUnpaidQueue] == currentHead) {
-                if (queueByBatch[lastUnpaidQueue][currentHead].next != index) {
+                if (queueSizeByBatch[lastUnpaidQueue] <= 2) {
+                    swap = true;
                     processPaymentForIndex(
-                        queueByBatch[lastUnpaidQueue][currentHead].next,
+                        tailByBatch[lastUnpaidQueue],
                         tokenPrice
                     );
-                } else {
-                    foundClaimedEntry = true;
                 }
+                foundClaimedEntry = true;
+            }
+            if (headByBatch[lastUnpaidQueue] == currentHead) {
+                processPaymentForIndex(
+                    queueByBatch[lastUnpaidQueue][currentHead].next,
+                    tokenPrice
+                );
             } else {
                 if (headByBatch[lastUnpaidQueue] != index) {
                     processPaymentForIndex(
@@ -142,18 +153,22 @@ contract QueueDistribution is ERC1155Holder {
                         tokenPrice
                     );
                 } else {
+                    if (queueSizeByBatch[lastUnpaidQueue] <= 1) {
+                        swap = true;
+                        processPaymentForIndex(
+                            headByBatch[lastUnpaidQueue],
+                            tokenPrice
+                        );
+                    }
                     foundClaimedEntry = true;
                 }
             }
+
             if (tailByBatch[lastUnpaidQueue] == currentTail) {
-                if (queueByBatch[lastUnpaidQueue][currentTail].next != index) {
-                    processPaymentForIndex(
-                        queueByBatch[lastUnpaidQueue][currentTail].prev,
-                        tokenPrice
-                    );
-                } else {
-                    foundClaimedEntry = true;
-                }
+                processPaymentForIndex(
+                    queueByBatch[lastUnpaidQueue][currentTail].prev,
+                    tokenPrice
+                );
             } else {
                 if (tailByBatch[lastUnpaidQueue] != index) {
                     processPaymentForIndex(
@@ -171,8 +186,9 @@ contract QueueDistribution is ERC1155Holder {
             currentHead = headByBatch[lastUnpaidQueue];
             currentTail = tailByBatch[lastUnpaidQueue];
         }
-
-        processPaymentForIndex(index, tokenPrice);
+        if (!swap) {
+            processPaymentForIndex(index, tokenPrice);
+        }
 
         token.safeTransfer(msg.sender, tokensToWithdraw[msg.sender]);
         tokensToWithdraw[msg.sender] = 0;
@@ -185,7 +201,19 @@ contract QueueDistribution is ERC1155Holder {
         uint256 currentBatch = lastUnpaidQueue;
         uint256 currentHead = headByBatch[currentBatch];
 
-        while (counter < 4 && currentBatch <= lastUnpaidQueue + 1) {
+        while (counter < 4) {
+            while (
+                queueSizeByBatch[currentBatch] == 0 &&
+                currentBatch <= currentIndex
+            ) {
+                currentBatch++;
+            }
+
+            if (currentBatch > currentIndex) {
+                break;
+            }
+
+            currentHead = headByBatch[currentBatch];
             while (currentHead != 0 && counter < 4) {
                 QueueEntry storage entry = queueByBatch[currentBatch][
                     currentHead
@@ -202,10 +230,7 @@ contract QueueDistribution is ERC1155Holder {
                 counter++;
             }
 
-            if (counter < 4) {
-                currentBatch++;
-                currentHead = headByBatch[currentBatch];
-            }
+            currentBatch++;
         }
 
         return totalRequiredBalance;
@@ -255,12 +280,17 @@ contract QueueDistribution is ERC1155Holder {
         queueSizeByBatch[queueId]--;
         totalNFTsInQueue--;
 
-        if (
-            queueSizeByBatch[queueId] == 0 && queueSizeByBatch[queueId + 1] > 0
-        ) {
-            ++lastUnpaidQueue;
+        if (queueSizeByBatch[queueId] == 0) {
+            while (
+                queueSizeByBatch[queueId + 1] == 0 &&
+                queueId + 1 <= currentIndex
+            ) {
+                queueId++;
+            }
+            if (queueSizeByBatch[queueId + 1] > 0) {
+                lastUnpaidQueue = queueId + 1;
+            }
         }
-
         delete queueByBatch[queueId][index];
     }
 

@@ -32,15 +32,15 @@ describe("Queue Distribution", function () {
     );
     const queueAddress = await queue.getAddress();
 
-    await token.mint(1000 * 10 ** 6);
-    await token.approve(collectionAddress, 1000 * 10 ** 6);
+    await token.mint(10000 * 10 ** 6);
+    await token.approve(collectionAddress, 10000 * 10 ** 6);
     await collection.mint(50);
     await collection.setApprovalForAll(queueAddress, true);
 
-    await token.connect(otherAccount).mint(1000 * 10 ** 6);
+    await token.connect(otherAccount).mint(10000 * 10 ** 6);
     await token
       .connect(otherAccount)
-      .approve(collectionAddress, 1000 * 10 ** 6);
+      .approve(collectionAddress, 10000 * 10 ** 6);
     await collection.connect(otherAccount).mint(49);
     await collection
       .connect(otherAccount)
@@ -223,7 +223,7 @@ describe("Queue Distribution", function () {
     }
     const balance = await btca.balanceOf(owner.address);
     await queue.claim(51, 2);
-    console.log(await queue.getQueueDetails(2));
+    // console.log(await queue.getQueueDetails(2));
 
     // expect((await btca.balanceOf(owner.address)) - balance).to.be.equal(
     //   ethers.parseUnits("956.999999999999999991", "ether")
@@ -250,5 +250,33 @@ describe("Queue Distribution", function () {
     }
 
     await queue.connect(otherAccount).claim(5, 1);
+  });
+  it("Should not claim with 3", async function () {
+    const {
+      owner,
+      otherAccount,
+      token,
+      collection,
+      collectionAddress,
+      queue,
+      queueAddress,
+      btca,
+    } = await loadFixture(deployFixture);
+    await btca.transfer(queueAddress, ethers.parseUnits("1000", "ether"));
+    await queue.incrementBalance(ethers.parseUnits("990", "ether"));
+    for (let index = 0; index < 1; index++) {
+      await queue.connect(otherAccount).addToQueue(1);
+    }
+    await collection.mint(1);
+    await queue.connect(otherAccount).addToQueue(1);
+
+    await collection.mint(100);
+    for (let index = 0; index < 2; index++) {
+      await queue.connect(otherAccount).addToQueue(1);
+    }
+    await queue.connect(otherAccount).claim(4, 3);
+    console.log(await queue.getQueueDetails(1));
+    console.log(await queue.getQueueDetails(2));
+    console.log(await queue.getQueueDetails(3));
   });
 });
