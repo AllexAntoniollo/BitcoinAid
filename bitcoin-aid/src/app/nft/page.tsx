@@ -152,7 +152,7 @@ useEffect(() => {
 </div>
 </div>
 
-<div className="mx-auto max-w-[100%] overflow-y-auto max-h-[300px] slider-container p-2 ml-[30px] mb-[100px] mt-[100px]">
+<div className="mx-auto max-w-[100%] overflow-y-auto custom-scroll max-h-[300px] slider-container p-2 ml-[30px] mb-[100px] mt-[100px]">
     {queueData.map((dataSet, index) => (
       <div key={index} className="mb-4">
         <h2 className="text-xl font-semibold mb-[5px]">Fila {index + 1}</h2>

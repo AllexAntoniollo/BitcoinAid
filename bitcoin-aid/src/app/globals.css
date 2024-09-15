@@ -13,6 +13,24 @@ input[type="number"] {
   -moz-appearance: textfield; /* Remove setas no Firefox */
 }
 
+/* Barra de rolagem em Webkit (Chrome, Safari, Edge) */
+.custom-scroll::-webkit-scrollbar {
+  width: 12px; /* Largura da barra de rolagem */
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Cor de fundo da trilha da barra de rolagem */
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #d79920; /* Cor da parte deslizante da barra de rolagem */
+  border-radius: 10px; /* Borda arredondada para a parte deslizante */
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #d79940; /* Cor da parte deslizante quando o usuário passa o mouse sobre ela */
+}
+
 
 
 @font-face {
