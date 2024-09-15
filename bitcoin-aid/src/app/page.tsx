@@ -19,6 +19,7 @@ export default function Home() {
   const [donateOpen, setDonateOpen] = useState(false);
   const [value, setValue] = useState('');
   const [time, setTime] = useState<number>(0);
+  const [tempo, setTempo] = useState<number>(0);
   interface UserBalance {
     amount: ethers.BigNumberish;
     time: number;
@@ -26,13 +27,6 @@ export default function Home() {
     fifteen: boolean;
   }
   
-
-  async function Countdown(){
-    if(time > 0){      
-      setTime(prevValor => prevValor - 1)
-      console.log("chamou %d", Number(time));
-    }
-  }
   async function getTime(address:string) {
     try{
       const result = await timeUntilNextWithDrawal(address);
@@ -40,9 +34,19 @@ export default function Home() {
     }catch{
       setError("Erro no getTime");
     }
-      Countdown();
+      
   }
 
+  useEffect(()=>{
+    const Countdown = () => {
+      if(time > 0){      
+        setTempo(time-1)
+        console.log("chamou %d", Number(time));
+      }
+    }
+  },[time]);
+   
+    
   const handleMaxClick = () => {
     if (balanceValue !== null) {
       setValue(ethers.formatEther(balanceValue));
@@ -171,12 +175,6 @@ useEffect(() => {
     return () => clearInterval(intervalId);
   }, [time]);
   
-  useEffect(()=>{
-    if(address){
-      getTime(address);
-    }
-  })
-
   return (
     <main className="w-100">
         {error && <Error msg={error} onClose={clearError} />}

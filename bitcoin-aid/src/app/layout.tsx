@@ -4,7 +4,6 @@ import "./globals.css";
 import Header from "../componentes/header";
 import { WalletProvider } from "@/services/walletContext";
 import Image from "next/image";
-
 const franklin = Libre_Franklin({ subsets: ["latin"] });
 
 export const metadata: Metadata = {

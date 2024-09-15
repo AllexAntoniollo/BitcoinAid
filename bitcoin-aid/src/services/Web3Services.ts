@@ -1,9 +1,15 @@
 import { ethers } from "ethers";
 import tokenAbi from "./Token.abi.json";
 import donationAbi from "./Donation.abi.json";
+import queueAbi from "./Queue.abi.json";
+import collectionAbi from "./Collection.abi.json";
 const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID;
 const TOKEN_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_ADDRESS;
 const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
+const QUEUE_ADDRESS = process.env.NEXT_PUBLIC_QUEUE_ADDRESS;
+const COLLECTION_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ADDRESS;
+import { nftQueue } from "./types";
+import { promises } from "dns";
 
 function getProvider() {
   if (!window.ethereum) throw new Error("No MetaMask found");
@@ -107,3 +113,44 @@ export async function claim(){
     return false;
   }
 }
+
+export async function getQueue(batchLevel:number) : Promise<nftQueue[]>{
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const queueContract = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, signer);
+
+  const getQueueDetails:nftQueue[] = await queueContract.getQueueDetails(batchLevel);
+  return getQueueDetails;
+}
+
+export async function addQueue(batch:number){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const queueContract = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, signer);
+
+  await queueContract.addToQueue(batch);
+}
+
+export async function getCurrentBatch(){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const collectionContract = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+
+  const currentBatch = await collectionContract.getCurrentBatch();
+  return currentBatch;
+}
+
+
+
+export async function mintNft(quantity:number){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const collectionContract = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+
+  await collectionContract.mint(quantity);
+}
+
