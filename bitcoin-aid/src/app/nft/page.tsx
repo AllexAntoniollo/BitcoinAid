@@ -65,8 +65,8 @@ const SimpleSlider = () => {
     dots: true,
     infinite: false, // Desativa o efeito "infinite" se houver menos de 3 itens
     speed: 500,
-    slidesToShow: 4, // Mostra no máximo 4 slides
-    slidesToScroll: Math.min(4, dataSetLength), // Rola no máximo 4 slides
+    slidesToShow: 3, // Mostra no máximo 4 slides
+    slidesToScroll: Math.min(3, dataSetLength), // Rola no máximo 4 slides
     adaptiveHeight: true, // Ajusta a altura do slider com base no conteúdo
     arrows: dataSetLength > 3, // Mostra as setas de navegação apenas se houver mais de 3 itens
     swipe: dataSetLength > 3, // Permite o swipe apenas se houver mais de 3 itens
@@ -75,20 +75,11 @@ const SimpleSlider = () => {
 
     responsive: [
       {
-        breakpoint: 1024, // Largura da tela para o breakpoint
-        settings: {
-          slidesToShow: 3,
-          slidesToScroll: 3,
-          infinite: dataSetLength > 3,
-          dots: true,
-        },
-      },
-      {
-        breakpoint: 950,
+        breakpoint: 1300, // Largura da tela para o breakpoint
         settings: {
           slidesToShow: 2,
           slidesToScroll: 2,
-          infinite: dataSetLength > 2,
+          infinite: false,
           dots: true,
           arrows: dataSetLength > 2, // Mostra as setas de navegação apenas se houver mais de 3 itens
           swipe: dataSetLength > 2, // Permite o swipe apenas se houver mais de 3 itens
@@ -97,11 +88,24 @@ const SimpleSlider = () => {
         },
       },
       {
-        breakpoint: 700, // Largura da tela para o breakpoint
+        breakpoint: 950,
+        settings: {
+          slidesToShow: 2,
+          slidesToScroll: 2,
+          infinite: false,
+          dots: true,
+          arrows: dataSetLength > 2, // Mostra as setas de navegação apenas se houver mais de 3 itens
+          swipe: dataSetLength > 2, // Permite o swipe apenas se houver mais de 3 itens
+          touchMove: dataSetLength > 2, // Permite o movimento com toque apenas se houver mais de 3 itens
+          draggable: dataSetLength > 2,
+        },
+      },
+      {
+        breakpoint: 890, // Largura da tela para o breakpoint
         settings: {
           slidesToShow: 1,
           slidesToScroll: 1,
-          infinite: dataSetLength > 1,
+          infinite: false,
           dots: true,
           arrows: dataSetLength > 1, // Mostra as setas de navegação apenas se houver mais de 3 itens
           swipe: dataSetLength > 1, // Permite o swipe apenas se houver mais de 3 itens
@@ -114,7 +118,7 @@ const SimpleSlider = () => {
         settings: {
           slidesToShow: 1,
           slidesToScroll: 1,
-          infinite: dataSetLength > 1, // Pode desativar o efeito "infinite" se houver apenas 1 item
+          infinite: false, // Pode desativar o efeito "infinite" se houver apenas 1 item
           dots: true,
           arrows: dataSetLength > 1, // Mostra as setas de navegação apenas se houver mais de 3 itens
           swipe: dataSetLength > 1, // Permite o swipe apenas se houver mais de 3 itens
@@ -130,16 +134,7 @@ const SimpleSlider = () => {
         <p className="mt-[40px] mb-[40px] leading-tight font-Agency text-[50px] sm:text-[80px] font-normal w-full">
           Bitcoin AiD Protocol - NFT Payment Queue
         </p>
-        <div className="bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] sm:w-[260px] w-[230px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
-          <div className=""></div>
-          <p>
-            User: <span></span>
-          </p>
-
-          <p></p>
-          <p>Dollars Claimed: </p>
-        </div>
-        <div className="mx-auto w-[35%] bg-[#26251f35] rounded-3xl mb-[10px] flex flex-col p-[10px] ">
+        <div className="mx-auto lg:w-[35%] w-[90%] bg-[#26251f35] rounded-3xl mb-[10px] flex flex-col p-[10px] ">
           <p className="font-Agency mx-auto text-[40px]">Buy NFT - Lote #4</p>
           <Image
             src="/images/NFTSATOSHI.png"
@@ -184,19 +179,25 @@ const SimpleSlider = () => {
           </div>
         </div>
 
-        <div className="mx-auto max-w-[100%] overflow-y-auto custom-scroll max-h-[300px] slider-container p-2 ml-[30px] mb-[100px] mt-[100px]">
-          {queueData.map((dataSet, index) => (
-            <div key={index} className="mb-4">
+        <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto custom-scroll slider-container p-2 ml-[30px] mb-[100px] mt-[100px]">
+          {queueData.map((dataSet, index) => {
+            const hasUserData = dataSet.some((item) => item.user);
+
+            return hasUserData ? (
+
+            
+            <div key={index} className="mb-4 h-full">
               <h2 className="text-xl font-semibold mb-[5px]">
                 Fila {index + 1}
               </h2>
-              <Slider
+              <Slider 
                 {...settings(dataSet.length)}
-                className="w-full max-w-[90%] mx-auto"
+                className="w-full max-w-[90%] mx-auto h-full"
               >
                 {dataSet.map((item, itemIndex) => (
+                  item.user ? (
                   <div key={itemIndex} className="mr-[10px]">
-                    <div className="bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] sm:w-[260px] w-[230px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2]">
+                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
@@ -228,10 +229,14 @@ const SimpleSlider = () => {
                       </p>
                     </div>
                   </div>
+                  ) : (
+                    ""
+                  )
                 ))}
               </Slider>
             </div>
-          ))}
+            ) : null
+        })}
         </div>
       </div>
 
