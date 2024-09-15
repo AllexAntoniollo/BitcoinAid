@@ -7,8 +7,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IUniswapOracle.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract QueueDistribution is ERC1155Holder {
+contract QueueDistribution is ERC1155Holder, Ownable {
     using SafeERC20 for IERC20;
 
     IBTCACollection public BTCACollection;
@@ -31,18 +32,27 @@ contract QueueDistribution is ERC1155Holder {
 
     uint public balanceFree;
     uint256 public currentIndex;
-
+    address donation;
     IERC20 token;
 
     mapping(address => uint256) public tokensToWithdraw;
 
     IUniswapOracle public uniswapOracle;
 
-    constructor(address _collection, address _token, address _oracle) {
+    constructor(
+        address _collection,
+        address _token,
+        address _oracle,
+        address initialOwner
+    ) Ownable(initialOwner) {
         BTCACollection = IBTCACollection(_collection);
         token = IERC20(_token);
         currentIndex = 1;
         uniswapOracle = IUniswapOracle(_oracle);
+    }
+
+    function setDonationContract(address _donation) external onlyOwner {
+        donation = _donation;
     }
 
     function addToQueue(uint256 tokenId) external {
@@ -80,7 +90,7 @@ contract QueueDistribution is ERC1155Holder {
         currentIndex++;
     }
 
-    function incrementBalance(uint amount) external {
+    function incrementBalance(uint amount) external onlyDonation {
         balanceFree += amount;
     }
 
@@ -194,7 +204,7 @@ contract QueueDistribution is ERC1155Holder {
         tokensToWithdraw[msg.sender] = 0;
     }
 
-    function getRequiredBalanceForNextFour() internal view returns (uint256) {
+    function getRequiredBalanceForNextFour() public view returns (uint256) {
         uint256 tokenPrice = uniswapOracle.returnPrice();
         uint256 totalRequiredBalance = 0;
         uint256 counter = 0;
@@ -206,13 +216,22 @@ contract QueueDistribution is ERC1155Holder {
                 queueSizeByBatch[currentBatch] == 0 &&
                 currentBatch <= currentIndex
             ) {
-                currentBatch++;
+                ++currentBatch;
             }
+            if (currentBatch >= 100) {
+                uint actual = BTCACollection.getCurrentBatch();
+                uint actualPrice = BTCACollection.getBatchPrice(actual) *
+                    10 ** 6;
 
-            if (currentBatch > currentIndex) {
-                break;
+                uint faltantes = 4 - counter;
+                uint totalPriceForFaltantes = actualPrice * faltantes * 3;
+
+                uint256 totalToClaim = (totalPriceForFaltantes * 1e18) /
+                    tokenPrice;
+                totalRequiredBalance += totalToClaim;
+
+                return totalRequiredBalance;
             }
-
             currentHead = headByBatch[currentBatch];
             while (currentHead != 0 && counter < 4) {
                 QueueEntry storage entry = queueByBatch[currentBatch][
@@ -335,5 +354,13 @@ contract QueueDistribution is ERC1155Holder {
         }
 
         return indices;
+    }
+
+    modifier onlyDonation() {
+        require(
+            donation == msg.sender,
+            "Only the donation contract can call this function."
+        );
+        _;
     }
 }

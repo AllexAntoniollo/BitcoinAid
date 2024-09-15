@@ -63,6 +63,10 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         limitPeriod = time;
     }
 
+    function setQueue(address _queue) external onlyOwner {
+        queueDistribution = IQueueDistribution(_queue);
+    }
+
     function timeUntilNextWithdrawal(
         address user
     ) external view returns (uint256) {

@@ -34,6 +34,7 @@ describe("Donation", function () {
     const queue = await Queue.deploy(
       collectionAddress,
       btcaAddress,
+      owner.address,
       owner.address
     );
     const queueAddress = await queue.getAddress();
@@ -47,6 +48,8 @@ describe("Donation", function () {
       queueAddress
     );
     const donationAddress = await donation.getAddress();
+
+    await queue.setDonationContract(donationAddress);
     await paymentManager.setDonation(donationAddress);
     await token.approve(donationAddress, ethers.parseUnits("1000000", "ether"));
     await donation.addDistributionFunds(ethers.parseUnits("1000000", "ether"));
