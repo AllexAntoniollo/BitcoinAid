@@ -236,7 +236,7 @@ useEffect(() => {
                   )}
                   <p className="text-[25px] font-Agency">$235.62</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
-                    <p className="text-[30px] font-Agency">Total Contributed: {ethers.formatEther(userBalanceValue)} <span className="text-[#d79920]">AiD</span></p>
+                    <p className="text-[30px] font-Agency">Total Contributed: {Number(userBalanceValue)/1000000} <span className="text-[#d79920]">AiD</span></p>
                   ):(
                     <p className="text-[30px] font-Agency">Total Contributed: ---- <span className="text-[#d79920]">AiD</span></p>
                   )}
@@ -262,7 +262,7 @@ useEffect(() => {
                 <div className="pt-[30px]">
                   <p className="font-Agency text-[30px]">CLAIMABLE REWARDS</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
-                     <p className="font-Agency text-center text-[28px]">{ethers.formatEther(userBalanceValue)}<span className="text-[#d79920]">AiD</span></p>
+                     <p className="font-Agency text-center text-[28px]">{Number(userBalanceValue)/1000000}<span className="text-[#d79920]">AiD</span></p>
                   ) : (
                     <p className="font-Agency text-center text-[28px]">---- <span className="text-[#d79920]">AiD</span></p>
                   )}
