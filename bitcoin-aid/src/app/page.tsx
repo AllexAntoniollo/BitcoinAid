@@ -1,11 +1,12 @@
 "use client";
-import { balance, approve, balanceDonationPool, userBalanceDonation, timeUntilNextWithDrawal, claim } from "@/services/Web3Services";
+import { doLogin, allow, balance, approve, balanceDonationPool, userBalanceDonation, timeUntilNextWithDrawal, claim } from "@/services/Web3Services";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import Error from "@/componentes/erro";
 import Alert from "@/componentes/alert";
 import { useWallet } from "@/services/walletContext";
 import Image from "next/image";
+const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
 
 
 export default function Home() {
@@ -14,19 +15,51 @@ export default function Home() {
   const [poolBalanceValue, setPoolBalanceValue] = useState<number | null>(null);
   const [balanceValue, setBalanceValue] = useState<number | null>(null);
   const [userBalanceValue, setUserBalanceValue] = useState<number | null>(null);
-  const { address } = useWallet();
+  const { address, setAddress } = useWallet();
   const [isFifteenDays, setFifteenDays] = useState(true);
   const [donateOpen, setDonateOpen] = useState(false);
   const [value, setValue] = useState('');
   const [time, setTime] = useState<number>(0);
   const [tempo, setTempo] = useState<number>(0);
+  const [allowance, setAllowance] = useState<number>(0);
+
   interface UserBalance {
     amount: ethers.BigNumberish;
     time: number;
     level: number;
     fifteen: boolean;
   }
-  
+
+const verifyAddress = (address:any) => {
+  return ethers.isAddress(address);
+};
+
+async function approveToken(address:string,value:number) {
+  try{
+    if(DONATION_ADDRESS){
+      const result = await approve(DONATION_ADDRESS,value);
+      if(result){await getAllowance(address, DONATION_ADDRESS)};
+    }
+  }catch(err){
+    setError("Erro no approve");
+  }
+}
+async function getAllowance(address:string, contract:string){
+  try{
+    const result = await allow(address, contract);
+    let etherValue = ethers.formatEther(result);
+    const etherNumber = parseFloat(etherValue);
+    if(result){
+      await setAllowance(etherNumber);
+      console.log("Total etherValue %d", etherNumber);
+
+    }else{
+      setAllowance(0);
+    }
+  }catch(err){
+    setError("Erro ao conferir permissao")
+  }
+}
   async function getTime(address:string) {
     try{
       const result = await timeUntilNextWithDrawal(address);
@@ -149,6 +182,9 @@ useEffect(() => {
     fetchBalance();
     getPoolBalance();
     if (address) {
+      if(DONATION_ADDRESS){
+        getAllowance(address,DONATION_ADDRESS);
+      }
       getTime(address);
       getUserBalance(address);
     }else{
@@ -175,6 +211,60 @@ useEffect(() => {
     return () => clearInterval(intervalId);
   }, [time]);
   
+  const handleLogin = async () => {
+    try {
+      const newAddress = await doLogin();
+      setAddress(newAddress);
+      setAlert("Login successful!");
+      setError("");
+    } catch (err) {
+      setError("Failed to login. Please try again.");
+      setAlert("");
+    }
+  };
+
+useEffect(() => {
+    const checkMetaMask = async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            const savedAddress = localStorage.getItem('userAddress');
+            if (savedAddress === accounts[0]) {
+              setAddress(savedAddress);
+            } else {
+              localStorage.removeItem('userAddress'); // Remove o endereço inválido
+            }
+          }
+        } catch (err) {
+          console.error("Failed to check MetaMask accounts:", err);
+
+        }
+
+        // Adiciona listeners para eventos de mudança de conta e desconexão
+        window.ethereum.on('accountsChanged', (accounts:string) => {
+          if (accounts.length === 0) {
+            // Se a conta estiver desconectada, limpa o cache
+            localStorage.removeItem('userAddress');
+            setAddress(null); // Limpa o estado da carteira
+          } else {
+            // Se uma nova conta estiver conectada, atualiza o estado
+            setAddress(accounts[0]);
+            localStorage.setItem('userAddress', accounts[0]);
+          }
+        });
+
+        window.ethereum.on('disconnect', () => {
+          // Quando desconectar, limpa o cache
+          localStorage.removeItem('userAddress');
+          setAddress(null);
+        });
+      }
+    };
+    checkMetaMask();
+})
+
+
   return (
     <main className="w-100">
         {error && <Error msg={error} onClose={clearError} />}
@@ -306,15 +396,28 @@ useEffect(() => {
              </button>
              <p className="text-center text-white text-[23px]">Contributing <span className="text-[#eda921]">AiD</span></p>
               {balanceValue !== null ? (
+                <>
                 <input onChange={(e) => setValue(e.target.value)} value={value} className="w-full m-w-[90%] p-2 bg-[#33322d] rounded-3xl mt-[20px] focus:outline-none focus:border-2 focus:border-[#eda921]" type="number" placeholder={ethers.formatEther(balanceValue)}></input>
-                
+                <button onClick={handleMaxClick} className="text-[#eda921] ml-[10px] font-bold mt-[3px]">MAX</button>
+                <div className="w-full flex flex-col items-center mb-[15px] mt-[10px]">
+                  {Number(allowance) >= Number(value) ? (
+                     <button onClick={verifyValue} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Contribute</button>
+                  ) : verifyAddress(address) ? (
+                    <button onClick={()=>approveToken(address,Number(value))} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Approve</button>
+                  ):  (
+                    ""
+                  )}
+                </div>
+                </>
               ) : (
-                <input className="w-full m-w-[90%] p-2 bg-[#33322d] rounded-3xl mt-[20px] focus:outline-none focus:border-2 focus:border-[#eda921]" type="number" placeholder="Connect Your Wallet"></input>
+                <button
+                onClick={handleLogin}
+                className="text-[12px] p-[8px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] hover:p-[10px] sm:text-[15px] font-semibold"
+              >
+                Connect Wallet
+              </button>
               )}
-              <button onClick={handleMaxClick} className="text-[#eda921] ml-[10px] font-bold mt-[3px]">MAX</button>
-              <div className="w-full flex flex-col items-center mb-[15px] mt-[10px]">
-                <button onClick={verifyValue} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Contribute</button>
-              </div>
+
            </div>
 
          </div>
