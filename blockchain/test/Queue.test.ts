@@ -225,7 +225,6 @@ describe("Queue Distribution", function () {
       await queue.connect(otherAccount).addToQueue(1);
     }
     const balance = await btca.balanceOf(owner.address);
-    console.log(await queue.getNextPositionsToBePaid());
 
     await queue.claim(51, 2);
     // console.log(await queue.getQueueDetails(2));
@@ -269,12 +268,17 @@ describe("Queue Distribution", function () {
     } = await loadFixture(deployFixture);
     await btca.transfer(queueAddress, ethers.parseUnits("1000", "ether"));
     await queue.incrementBalance(ethers.parseUnits("990", "ether"));
+    await queue.connect(otherAccount).addToQueue(1);
 
     await collection.mint(1);
-    await collection.mint(100);
-    await collection.mint(100);
-
     await queue.connect(otherAccount).addToQueue(1);
+    await collection.mint(100);
+    await queue.connect(otherAccount).addToQueue(1);
+
+    await collection.mint(100);
+    await queue.connect(otherAccount).addToQueue(1);
+
+    console.log(await queue.getNextUsersToPaid());
 
     console.log(await queue.getRequiredBalanceForNextFour());
   });

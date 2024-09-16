@@ -271,6 +271,76 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         return userNFTs;
     }
 
+    function getNextUsersToPaid() external view returns (QueueEntry[] memory) {
+        require(totalNFTsInQueue >= 4, "At least 4 NFTs required");
+
+        QueueEntry[] memory result = new QueueEntry[](4);
+        uint256 tokenPrice = uniswapOracle.returnPrice();
+        uint256 counter = 0;
+        uint256 currentBatch = lastUnpaidQueue;
+
+        while (counter < 4) {
+            // Procurar o próximo batch não vazio
+            while (
+                queueSizeByBatch[currentBatch] == 0 &&
+                currentBatch <= currentIndex
+            ) {
+                currentBatch++;
+            }
+
+            uint256 currentHead = headByBatch[currentBatch];
+            if (currentHead != 0 && counter < 4) {
+                result[counter] = processPaymentView(
+                    currentHead,
+                    tokenPrice,
+                    currentBatch
+                );
+                counter++;
+
+                if (
+                    queueByBatch[currentBatch][currentHead].next != 0 &&
+                    counter < 4
+                ) {
+                    currentHead = queueByBatch[currentBatch][currentHead].next;
+                    result[counter] = processPaymentView(
+                        currentHead,
+                        tokenPrice,
+                        currentBatch
+                    );
+                    counter++;
+                }
+            }
+
+            uint256 currentTail = tailByBatch[currentBatch];
+            if (currentTail != 0 && currentTail != currentHead && counter < 4) {
+                result[counter] = processPaymentView(
+                    currentTail,
+                    tokenPrice,
+                    currentBatch
+                );
+                counter++;
+
+                if (
+                    queueByBatch[currentBatch][currentTail].prev != 0 &&
+                    currentTail != currentHead &&
+                    counter < 4
+                ) {
+                    currentTail = queueByBatch[currentBatch][currentTail].prev;
+                    result[counter] = processPaymentView(
+                        currentTail,
+                        tokenPrice,
+                        currentBatch
+                    );
+                    counter++;
+                }
+            }
+
+            currentBatch++;
+        }
+
+        return result;
+    }
+
     function getRequiredBalanceForNextFour() public view returns (uint256) {
         uint256 tokenPrice = uniswapOracle.returnPrice();
         uint256 totalRequiredBalance = 0;
@@ -346,6 +416,33 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         }
 
         entry.dollarsClaimed += (payableAmount * tokenPrice) / 1e18;
+    }
+
+    function processPaymentView(
+        uint256 current,
+        uint256 tokenPrice,
+        uint lastUnpaid
+    ) internal view returns (QueueEntry memory entryView) {
+        QueueEntry storage entry = queueByBatch[lastUnpaid][current];
+        uint256 batchPrice = BTCACollection.getBatchPrice(entry.batchLevel) *
+            10 ** 6;
+        uint256 maxClaim = (batchPrice * 3) - entry.dollarsClaimed;
+        uint256 totalToClaim = (maxClaim * 1e18) / tokenPrice;
+
+        uint256 payableAmount = totalToClaim > balanceFree
+            ? balanceFree
+            : totalToClaim;
+
+        entryView = QueueEntry({
+            user: entry.user,
+            next: entry.next,
+            prev: entry.prev,
+            index: current,
+            batchLevel: entry.batchLevel,
+            dollarsClaimed: entry.dollarsClaimed +
+                (payableAmount * tokenPrice) /
+                1e18
+        });
     }
 
     function removeFromQueue(uint256 index, uint queueId) internal {
