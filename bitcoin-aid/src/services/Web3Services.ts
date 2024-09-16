@@ -78,6 +78,10 @@ export async function approve(spender:string, amount:number) {
   return true;
 }
 
+export async function donate(amount:number,fifteenDays:boolean){
+
+}
+
 export async function balanceDonationPool(){
   const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
 
