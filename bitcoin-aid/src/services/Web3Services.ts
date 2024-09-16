@@ -50,6 +50,20 @@ export async function balance(address:string) {
   //   await tx.wait();
 }
 
+export async function allow(address:string, contract:string) {
+  const provider = await getProvider();
+
+  const signer = await provider.getSigner();
+
+  const getAllowance = new ethers.Contract(TOKEN_ADDRESS ? TOKEN_ADDRESS : "", tokenAbi, signer);
+
+  const allowance = await getAllowance.allowance(address, contract);
+
+  console.log(allowance);
+  return allowance;
+
+}
+
 
 export async function approve(spender:string, amount:number) {
   const provider = await getProvider();
@@ -59,14 +73,9 @@ export async function approve(spender:string, amount:number) {
   //EX instancia de contrato
   const tokenContract = new ethers.Contract(TOKEN_ADDRESS ? TOKEN_ADDRESS : "", tokenAbi, signer);
 
-  await tokenContract.approve(spender, ethers.parseUnits(String(amount),"ether"));
-
-
-  //Ex chamando a função do contrato passando o parâmetro tokenId
-  //   const tx = await stakeContract.stake(tokenId);
-
-  //Espera a transação confirmar
-  //   await tx.wait();
+  const tx = await tokenContract.approve(spender, ethers.parseUnits(String(amount),"ether"));
+  await tx.wait();
+  return true;
 }
 
 export async function balanceDonationPool(){
