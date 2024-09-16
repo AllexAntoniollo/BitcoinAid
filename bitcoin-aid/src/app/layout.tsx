@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Libre_Franklin } from "next/font/google";
 import "./globals.css";
 import Header from "../componentes/header";
+import Footer from "@/componentes/footer";
 import { WalletProvider } from "@/services/walletContext";
 import Image from "next/image";
 const franklin = Libre_Franklin({ subsets: ["latin"] });
@@ -26,6 +27,7 @@ export default function RootLayout({
         <WalletProvider> {/* Envolva o conteúdo com o WalletProvider */}
           <Header />
           <main className={franklin.className}>{children}</main>
+          <Footer/>
         </WalletProvider>
       </body>
     </html>

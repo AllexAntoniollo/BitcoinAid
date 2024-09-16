@@ -412,7 +412,7 @@ useEffect(() => {
               ) : (
                 <button
                 onClick={handleLogin}
-                className="text-[12px] p-[8px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] hover:p-[10px] sm:text-[15px] font-semibold"
+                className="flex items-center justify-center mt-[20px] text-[12px] py-[10px] px-[20px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] hover:px-[22px] hover:py-[12] sm:text-[15px] font-semibold mx-auto"
               >
                 Connect Wallet
               </button>
@@ -424,7 +424,7 @@ useEffect(() => {
         
          
         ) : ("")}
-        <p>All Rigths Reserveds</p>
+
     </main>
   );   
 }
