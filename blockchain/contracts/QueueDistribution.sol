@@ -28,7 +28,7 @@ contract QueueDistribution is ERC1155Holder, Ownable {
     mapping(uint256 => uint256) public tailByBatch;
     mapping(uint256 => uint256) public queueSizeByBatch;
     mapping(uint256 => mapping(uint256 => QueueEntry)) public queueByBatch;
-    uint public lastUnpaidQueue = 1;
+    uint public lastUnpaidQueue;
 
     uint public balanceFree;
     uint256 public currentIndex;
@@ -49,6 +49,7 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         token = IERC20(_token);
         currentIndex = 1;
         uniswapOracle = IUniswapOracle(_oracle);
+        lastUnpaidQueue = BTCACollection.getCurrentBatch();
     }
 
     function setDonationContract(address _donation) external onlyOwner {
@@ -95,6 +96,12 @@ contract QueueDistribution is ERC1155Holder, Ownable {
     }
 
     function claim(uint256 index, uint queueId) external {
+        while (
+            queueSizeByBatch[lastUnpaidQueue] == 0 &&
+            lastUnpaidQueue < currentIndex
+        ) {
+            ++lastUnpaidQueue;
+        }
         require(
             index >= headByBatch[queueId] && index <= tailByBatch[queueId],
             "Invalid index"
@@ -202,6 +209,66 @@ contract QueueDistribution is ERC1155Holder, Ownable {
 
         token.safeTransfer(msg.sender, tokensToWithdraw[msg.sender]);
         tokensToWithdraw[msg.sender] = 0;
+    }
+
+    function getUserQueues(
+        address user
+    ) external view returns (uint256[] memory) {
+        uint256[] memory userBatches = new uint256[](
+            BTCACollection.getCurrentBatch()
+        );
+        uint256 counter = 0;
+
+        for (
+            uint256 batchLevel = 1;
+            batchLevel <= BTCACollection.getCurrentBatch();
+            batchLevel++
+        ) {
+            uint256 current = headByBatch[batchLevel];
+            while (current != 0) {
+                if (queueByBatch[batchLevel][current].user == user) {
+                    userBatches[counter] = batchLevel;
+                    counter++;
+                    break;
+                }
+                current = queueByBatch[batchLevel][current].next;
+            }
+        }
+
+        uint256[] memory result = new uint256[](counter);
+        for (uint256 i = 0; i < counter; i++) {
+            result[i] = userBatches[i];
+        }
+        return result;
+    }
+
+    function getUserNFTsInSpecificQueue(
+        address user,
+        uint256 batchLevel
+    ) external view returns (QueueEntry[] memory) {
+        uint256 totalNFTsForUser = 0;
+        uint256 current = headByBatch[batchLevel];
+
+        while (current != 0) {
+            if (queueByBatch[batchLevel][current].user == user) {
+                totalNFTsForUser++;
+            }
+            current = queueByBatch[batchLevel][current].next;
+        }
+
+        QueueEntry[] memory userNFTs = new QueueEntry[](totalNFTsForUser);
+        uint256 index = 0;
+        current = headByBatch[batchLevel];
+
+        while (current != 0) {
+            if (queueByBatch[batchLevel][current].user == user) {
+                userNFTs[index] = queueByBatch[batchLevel][current];
+                index++;
+            }
+            current = queueByBatch[batchLevel][current].next;
+        }
+
+        return userNFTs;
     }
 
     function getRequiredBalanceForNextFour() public view returns (uint256) {

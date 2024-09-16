@@ -109,7 +109,7 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         uint256 distributedAmount = (amount * 3) / 10;
         totalDistributedForUsers += distributedAmount;
         token.safeTransfer(address(queueDistribution), distributedAmount);
-        queueDistribution.incrementBalance((amount * 99) / 100);
+        queueDistribution.incrementBalance((distributedAmount * 99) / 100);
         emit UserDonated(msg.sender, amount);
     }
 
