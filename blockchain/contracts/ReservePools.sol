@@ -17,13 +17,19 @@ contract ReservePools is Ownable {
     event BalanceIncremented(uint256 amount);
     event Swapped(uint256 usdAmount, uint256 btcaAmount);
     event ClaimedBTCA(address indexed user, uint256 amount);
+    event CollectionSet(address indexed collectionAddress);
 
     constructor(IERC20 _usdToken, address initialOwner) Ownable(initialOwner) {
         usdToken = _usdToken;
     }
 
     function setCollection(address _collection) external onlyOwner {
+        require(
+            _collection != address(0),
+            "Collection address cannot be zero address"
+        );
         collection = _collection;
+        emit CollectionSet(_collection);
     }
 
     function incrementBalance(uint256 amount) external onlyCollection {

@@ -12,13 +12,39 @@ describe("Queue Distribution", function () {
     const token = await Token.deploy();
     const tokenAddress = await token.getAddress();
 
-    const BTCA = await ethers.getContractFactory("BitcoinAid");
-    const btca = await BTCA.deploy();
+    const Btca = await ethers.getContractFactory("BitcoinAid");
+    const btca = await Btca.deploy();
     const btcaAddress = await btca.getAddress();
 
+    const PaymentManager = await ethers.getContractFactory("PaymentManager");
+    const paymentManager = await PaymentManager.deploy(
+      tokenAddress,
+      owner.address
+    );
+    const paymentManagerAddress = await paymentManager.getAddress();
+    const ReserveBTCA = await ethers.getContractFactory("ReserveBTCA");
+    const reserveBtca = await ReserveBTCA.deploy(
+      tokenAddress,
+      btcaAddress,
+      owner.address
+    );
+    const resveBtcaAddress = await reserveBtca.getAddress();
+    const ReservePools = await ethers.getContractFactory("ReservePools");
+    const reservePools = await ReservePools.deploy(tokenAddress, owner.address);
+    const reservePoolsAddress = await reservePools.getAddress();
+
     const BTCACollection = await ethers.getContractFactory("BTCACollection");
-    const collection = await BTCACollection.deploy(owner.address, tokenAddress);
+    const collection = await BTCACollection.deploy(
+      owner.address,
+      tokenAddress,
+      paymentManagerAddress
+    );
     const collectionAddress = await collection.getAddress();
+    await collection.setReserveBtca(resveBtcaAddress);
+    await collection.setReservePools(reservePoolsAddress);
+    await paymentManager.setCollection(collectionAddress);
+    await reserveBtca.setCollection(collectionAddress);
+    await reservePools.setCollection(collectionAddress);
 
     const UniswapOracle = await ethers.getContractFactory("UniswapOracle");
     const uniswapOracle = await UniswapOracle.deploy();

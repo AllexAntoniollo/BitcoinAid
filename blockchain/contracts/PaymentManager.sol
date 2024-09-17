@@ -29,6 +29,7 @@ contract PaymentManager is Ownable {
     event Claim(uint256 amount);
     event DonationSet(address indexed donationAddress);
     event CollectionSet(address indexed collectionContract);
+    event BalanceIncremented(uint256 amount);
 
     constructor(address _token, address initialOwner) Ownable(initialOwner) {
         token = IERC20(_token);
@@ -47,11 +48,19 @@ contract PaymentManager is Ownable {
     }
 
     function setDonation(address _donation) external onlyOwner {
+        require(
+            _donation != address(0),
+            "Donation address cannot be zero address"
+        );
         donationContract = _donation;
         emit DonationSet(_donation);
     }
 
     function setCollection(address _collection) external onlyOwner {
+        require(
+            _collection != address(0),
+            "Collection address cannot be zero address"
+        );
         collectionContract = _collection;
         emit CollectionSet(_collection);
     }
@@ -66,6 +75,7 @@ contract PaymentManager is Ownable {
 
     function incrementBalance(uint amount) external onlyContracts {
         balanceFree += amount;
+        emit BalanceIncremented(amount);
     }
 
     function getUserBalance(address _wallet) external view returns (uint256) {

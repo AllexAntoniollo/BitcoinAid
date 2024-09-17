@@ -8,11 +8,32 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IUniswapOracle.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract QueueDistribution is ERC1155Holder, Ownable {
+contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IBTCACollection public BTCACollection;
+
+    event DonationSet(address indexed donationAddress);
+    event BalanceIncremented(uint256 amount);
+    event AddedToQueue(
+        address indexed user,
+        uint256 tokenId,
+        uint256 index,
+        uint256 batchLevel
+    );
+    event PaymentProcessed(
+        address indexed user,
+        uint256 amount,
+        uint256 tokenPrice
+    );
+    event RemovedFromQueue(
+        address indexed user,
+        uint256 index,
+        uint256 batchLevel
+    );
+    event TokensWithdrawn(address indexed user, uint256 amount);
 
     struct QueueEntry {
         address user;
@@ -22,6 +43,7 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         uint batchLevel;
         uint dollarsClaimed;
     }
+
     uint public totalNFTsInQueue;
 
     mapping(uint256 => uint256) public headByBatch;
@@ -53,10 +75,15 @@ contract QueueDistribution is ERC1155Holder, Ownable {
     }
 
     function setDonationContract(address _donation) external onlyOwner {
+        require(
+            _donation != address(0),
+            "Donation address cannot be zero address"
+        );
         donation = _donation;
+        emit DonationSet(_donation);
     }
 
-    function addToQueue(uint256 tokenId) external {
+    function addToQueue(uint256 tokenId) external nonReentrant {
         BTCACollection.safeTransferFrom(
             msg.sender,
             address(this),
@@ -88,6 +115,8 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         queueSizeByBatch[batchLevel]++;
         totalNFTsInQueue++;
 
+        emit AddedToQueue(msg.sender, tokenId, currentIndex, batchLevel);
+
         currentIndex++;
     }
 
@@ -97,9 +126,10 @@ contract QueueDistribution is ERC1155Holder, Ownable {
 
     function incrementBalance(uint amount) external onlyDonation {
         balanceFree += amount;
+        emit BalanceIncremented(amount);
     }
 
-    function claim(uint256 index, uint queueId) external {
+    function claim(uint256 index, uint queueId) external nonReentrant {
         while (
             queueSizeByBatch[lastUnpaidQueue] == 0 &&
             lastUnpaidQueue < currentIndex
@@ -210,9 +240,11 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         if (!swap) {
             processPaymentForIndex(index, tokenPrice);
         }
-
-        token.safeTransfer(msg.sender, tokensToWithdraw[msg.sender]);
+        uint amount = tokensToWithdraw[msg.sender];
         tokensToWithdraw[msg.sender] = 0;
+        token.safeTransfer(msg.sender, amount);
+
+        emit TokensWithdrawn(msg.sender, amount);
     }
 
     function getUserQueues(
@@ -284,7 +316,6 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         uint256 currentBatch = lastUnpaidQueue;
 
         while (counter < 4) {
-            // Procurar o próximo batch não vazio
             while (
                 queueSizeByBatch[currentBatch] == 0 &&
                 currentBatch <= currentIndex
@@ -415,6 +446,8 @@ contract QueueDistribution is ERC1155Holder, Ownable {
 
         tokensToWithdraw[entry.user] += payableAmount;
 
+        emit PaymentProcessed(entry.user, payableAmount, tokenPrice);
+
         if (payableAmount == totalToClaim) {
             removeFromQueue(current, lastUnpaidQueue);
         }
@@ -467,6 +500,8 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         queueSizeByBatch[queueId]--;
         totalNFTsInQueue--;
 
+        emit RemovedFromQueue(entry.user, index, queueId);
+
         if (queueSizeByBatch[queueId] == 0) {
             while (
                 queueSizeByBatch[queueId + 1] == 0 &&
@@ -500,11 +535,13 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         return queueDetails;
     }
 
-    function withdrawTokens() external {
+    function withdrawTokens() external nonReentrant {
         uint256 amount = tokensToWithdraw[msg.sender];
         require(amount > 0, "No tokens to withdraw");
         tokensToWithdraw[msg.sender] = 0;
         token.safeTransfer(msg.sender, amount);
+
+        emit TokensWithdrawn(msg.sender, amount);
     }
 
     function getIndicesByBatchLevel(

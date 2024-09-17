@@ -98,7 +98,7 @@ describe("Payment Manager", function () {
       paymentManagerAddress,
     } = await loadFixture(deployFixture);
     await expect(paymentManager.incrementBalance(100)).to.be.revertedWith(
-      "Only the donation contract can call this function."
+      "Only the donation contract or collection contract can call this function."
     );
   });
   it("Should not claim (not recipient)", async function () {
