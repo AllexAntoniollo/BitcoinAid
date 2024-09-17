@@ -91,6 +91,10 @@ contract QueueDistribution is ERC1155Holder, Ownable {
         currentIndex++;
     }
 
+    function getCurrentIndex() external view returns (uint) {
+        return currentIndex;
+    }
+
     function incrementBalance(uint amount) external onlyDonation {
         balanceFree += amount;
     }
