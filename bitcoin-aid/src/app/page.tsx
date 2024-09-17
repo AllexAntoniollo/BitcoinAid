@@ -15,7 +15,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [alert, setAlert] = useState("");
   const [poolBalanceValue, setPoolBalanceValue] = useState<number | null>(null);
-  const [balanceValue, setBalanceValue] = useState<number | null>(null);
+  const [balanceValue, setBalanceValue] = useState<number>(0);
   const [userBalanceValue, setUserBalanceValue] = useState<number | null>(null);
   const {address, setAddress} = useWallet();
   const [isFifteenDays, setFifteenDays] = useState(true);
@@ -193,7 +193,7 @@ useEffect(() => {
       if (address) {
         await getBalance(address);
       } else {
-        setBalanceValue(null);
+        setBalanceValue(0);
       }
     }
 
@@ -289,7 +289,7 @@ useEffect(() => {
 
   return (
     <main className="w-100 h-[full]">
-      <p>{address}</p>
+      <p className="text-blue-600 max-w-[100%]">{address}</p>
         {error && <Error msg={error} onClose={clearError} />}
         {alert && <Alert msg={alert} onClose={clearAlert}/>}
         {loading && (
@@ -423,7 +423,7 @@ useEffect(() => {
                <p className="font-bold">X</p>
              </button>
              <p className="text-center text-white text-[23px]">Contributing <span className="text-[#eda921]">AiD</span></p>
-              {balanceValue !== null && address ? (
+              {address ? (
                 <>
                 <input onChange={(e) => setValue(e.target.value)} value={value} className="w-full m-w-[90%] p-2 bg-[#33322d] rounded-3xl mt-[20px] focus:outline-none focus:border-2 focus:border-[#eda921]" type="number" placeholder={ethers.formatEther(balanceValue)}></input>
                 <button onClick={handleMaxClick} className="text-[#eda921] ml-[10px] font-bold mt-[3px]">MAX</button>
