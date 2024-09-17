@@ -16,6 +16,7 @@ contract PaymentManager is Ownable {
     uint8 public totalRecipients;
     uint24 public totalPercentage;
     address public donationContract;
+    address public collectionContract;
 
     address[4] public fixedWallets = [
         0x1111111111111111111111111111111111111111,
@@ -27,6 +28,7 @@ contract PaymentManager is Ownable {
 
     event Claim(uint256 amount);
     event DonationSet(address indexed donationAddress);
+    event CollectionSet(address indexed collectionContract);
 
     constructor(address _token, address initialOwner) Ownable(initialOwner) {
         token = IERC20(_token);
@@ -49,15 +51,20 @@ contract PaymentManager is Ownable {
         emit DonationSet(_donation);
     }
 
-    modifier onlyDonation() {
+    function setCollection(address _collection) external onlyOwner {
+        collectionContract = _collection;
+        emit CollectionSet(_collection);
+    }
+
+    modifier onlyContracts() {
         require(
-            donationContract == msg.sender,
-            "Only the donation contract can call this function."
+            donationContract == msg.sender || collectionContract == msg.sender,
+            "Only the donation contract or collection contract can call this function."
         );
         _;
     }
 
-    function incrementBalance(uint amount) external onlyDonation {
+    function incrementBalance(uint amount) external onlyContracts {
         balanceFree += amount;
     }
 

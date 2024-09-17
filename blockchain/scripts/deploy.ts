@@ -34,25 +34,25 @@ async function main() {
   // const collectionAddress = await collection.getAddress();
   // console.log(`collection deployed to ${collectionAddress}`);
 
-  // const Queue = await ethers.getContractFactory("QueueDistribution");
-  // const queue = await Queue.deploy(
-  //   "0xDFB4b3052BA55e6f682D10AD3A75453fc8a36425",
-  //   "0x7bc9E3c20CCb65F065D8672e412975f38E426917",
-  //   "0x5873Df37e0d8Fc61cB1B917cBdAfD2A24428cC9F",
-  //   "0x1dD0dedBf32825652337F6BB7a3B3b4776547572"
-  // );
-  // const queueAddress = await queue.getAddress();
-  // console.log(`queue deployed to ${queueAddress}`);
-
-  const MultiCall = await ethers.getContractFactory("MultiCall");
-  const multicall = await MultiCall.deploy(
-    "0x1dD0dedBf32825652337F6BB7a3B3b4776547572",
+  const Queue = await ethers.getContractFactory("QueueDistribution");
+  const queue = await Queue.deploy(
     "0xDFB4b3052BA55e6f682D10AD3A75453fc8a36425",
-    "0xC951BAA09bB2D9E12D761bE54AA63fDD97d435f8",
-    "0x7bc9E3c20CCb65F065D8672e412975f38E426917"
+    "0x7bc9E3c20CCb65F065D8672e412975f38E426917",
+    "0x5873Df37e0d8Fc61cB1B917cBdAfD2A24428cC9F",
+    "0x1dD0dedBf32825652337F6BB7a3B3b4776547572"
   );
-  const queueAddress = await multicall.getAddress();
-  console.log(`multicall deployed to ${queueAddress}`);
+  const queueAddress = await queue.getAddress();
+  console.log(`queue deployed to ${queueAddress}`);
+
+  // const MultiCall = await ethers.getContractFactory("MultiCall");
+  // const multicall = await MultiCall.deploy(
+  //   "0x1dD0dedBf32825652337F6BB7a3B3b4776547572",
+  //   "0xDFB4b3052BA55e6f682D10AD3A75453fc8a36425",
+  //   "0xC951BAA09bB2D9E12D761bE54AA63fDD97d435f8",
+  //   "0x7bc9E3c20CCb65F065D8672e412975f38E426917"
+  // );
+  // const queueAddress = await multicall.getAddress();
+  // console.log(`multicall deployed to ${queueAddress}`);
 
   // const Donation = await ethers.getContractFactory("DonationBTCA");
   // const donation = await Donation.deploy(
