@@ -51,7 +51,9 @@ const SimpleSlider = () => {
           promises.push(getQueue(i));
         }
         const results = await Promise.all(promises);
-
+        if(results == undefined || results == null){
+          alert("Veio tudo vazio")
+        }
         setQueueData(results);
         console.log("resultado ", results);
       } catch (err) {
@@ -59,6 +61,7 @@ const SimpleSlider = () => {
       }
     };
     fetchQueue();
+    alert("testando alerta")
   }, []);
 
   const settings = (dataSetLength: number) => ({
