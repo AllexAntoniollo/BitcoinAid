@@ -141,7 +141,7 @@ async function getAllowance(address:string, contract:string){
       if (result !== undefined) {
         setBalanceValue(result);
       } else {
-        setBalanceValue(null);
+        setBalanceValue(0);
         setError("Deu pau");
       }
     } catch (err) {
@@ -423,7 +423,7 @@ useEffect(() => {
                <p className="font-bold">X</p>
              </button>
              <p className="text-center text-white text-[23px]">Contributing <span className="text-[#eda921]">AiD</span></p>
-              {balanceValue !== null ? (
+              {balanceValue !== null && address ? (
                 <>
                 <input onChange={(e) => setValue(e.target.value)} value={value} className="w-full m-w-[90%] p-2 bg-[#33322d] rounded-3xl mt-[20px] focus:outline-none focus:border-2 focus:border-[#eda921]" type="number" placeholder={ethers.formatEther(balanceValue)}></input>
                 <button onClick={handleMaxClick} className="text-[#eda921] ml-[10px] font-bold mt-[3px]">MAX</button>
