@@ -51,7 +51,9 @@ const SimpleSlider = () => {
           promises.push(getQueue(i));
         }
         const results = await Promise.all(promises);
-
+        if(results == undefined || results == null){
+          alert("Veio tudo vazio")
+        }
         setQueueData(results);
         console.log("resultado ", results);
       } catch (err) {
@@ -59,6 +61,7 @@ const SimpleSlider = () => {
       }
     };
     fetchQueue();
+    alert("testando alerta")
   }, []);
 
   const settings = (dataSetLength: number) => ({
@@ -113,24 +116,11 @@ const SimpleSlider = () => {
           draggable: dataSetLength > 1,
         },
       },
-      {
-        breakpoint: 480, // Largura da tela para o breakpoint
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          infinite: false, // Pode desativar o efeito "infinite" se houver apenas 1 item
-          dots: true,
-          arrows: dataSetLength > 1, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: dataSetLength > 1, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: dataSetLength > 1, // Permite o movimento com toque apenas se houver mais de 3 itens
-          draggable: dataSetLength > 1,
-        },
-      },
     ],
   });
   return (
     <>
-      <div className=" w-full max-w-[90%] m-auto p-4">
+      <div className=" w-full sm:max-w-[90%] max-w-[98%]  m-auto p-4">
         <p className="mt-[40px] mb-[40px] leading-tight font-Agency text-[50px] sm:text-[80px] font-normal w-full">
           Bitcoin AiD Protocol - NFT Payment Queue
         </p>
@@ -178,26 +168,25 @@ const SimpleSlider = () => {
             </div>
           </div>
         </div>
-
-        <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto custom-scroll slider-container p-2 ml-[30px] mb-[100px] mt-[100px]">
+        <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto custom-scroll slider-container p-2 mb-[100px] mt-[100px]">
           {queueData.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
-
             return hasUserData ? (
 
-            
-            <div key={index} className="mb-4 h-full">
+              
+            <div key={index} className="mb-2 h-full">
+              
               <h2 className="text-xl font-semibold mb-[5px]">
                 Fila {index + 1}
               </h2>
               <Slider 
                 {...settings(dataSet.length)}
-                className="w-full max-w-[90%] mx-auto h-full"
+                className="w-full sm:max-w-[90%] max-w-[100%] mx-auto h-full mt-[10px]"
               >
                 {dataSet.map((item, itemIndex) => (
                   item.user ? (
                   <div key={itemIndex} className="mr-[10px]">
-                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
+                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
@@ -239,6 +228,73 @@ const SimpleSlider = () => {
         })}
         </div>
       </div>
+
+
+
+
+
+
+
+
+
+      <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto custom-scroll slider-container p-2 mb-[100px] mt-[100px]">
+
+              
+            <div className="mb-2 h-full">
+              
+              <h2 className="text-xl font-semibold mb-[5px]">
+                
+              </h2>
+              <Slider 
+                
+                className="w-full sm:max-w-[90%] max-w-[100%] mx-auto h-full mt-[10px]"
+              >
+               
+                  <div className="mr-[10px]">
+                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
+                      <div className="">
+                        <h3>Posição da Fila:</h3>
+                      </div>
+                      <p>
+                        User:{" "}
+                        <span>
+                          
+                        </span>
+                      </p>
+                      <p>Prox: </p>
+                      <p>
+                        Anterior: 
+                      </p>
+                      <p>Index: </p>
+                      <p>
+                        Batch Level:
+                    
+                      </p>
+                      <p>
+                      
+                      </p>
+                    </div>
+                  </div>
+              </Slider>
+            </div>
+        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       {addNftOpen ? (
         <div className="fixed inset-0 flex items-center justify-center z-50">
