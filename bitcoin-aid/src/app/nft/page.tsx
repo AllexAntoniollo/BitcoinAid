@@ -113,19 +113,6 @@ const SimpleSlider = () => {
           draggable: dataSetLength > 1,
         },
       },
-      {
-        breakpoint: 480, // Largura da tela para o breakpoint
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          infinite: false, // Pode desativar o efeito "infinite" se houver apenas 1 item
-          dots: true,
-          arrows: dataSetLength > 1, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: dataSetLength > 1, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: dataSetLength > 1, // Permite o movimento com toque apenas se houver mais de 3 itens
-          draggable: dataSetLength > 1,
-        },
-      },
     ],
   });
   return (
@@ -197,7 +184,7 @@ const SimpleSlider = () => {
                 {dataSet.map((item, itemIndex) => (
                   item.user ? (
                   <div key={itemIndex} className="mr-[10px]">
-                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
+                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 w-[150px] h-[200px] sm:w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] sm:caixa3d nftPiscando">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
