@@ -12,7 +12,7 @@ const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(" ");
+  const [error, setError] = useState("");
   const [alert, setAlert] = useState("");
   const [poolBalanceValue, setPoolBalanceValue] = useState<number | null>(null);
   const [balanceValue, setBalanceValue] = useState<number | null>(null);
@@ -334,7 +334,7 @@ useEffect(() => {
             )}
           </div>
           <div className="mb-[30px] flex flex-wrap justify-center items-center cards w-[100%] mt-[50px]">
-            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[70%] lg:w-[45%] h-[500px] border-2 border-[#d79920] rounded-[3rem] mr-[40px]">
+            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[90%] lg:w-[45%] h-[500px] border-2 border-[#d79920] rounded-[3rem] mr-[40px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
               <p className="text-[30px] font-semibold">Contribute AiD</p>
@@ -361,7 +361,7 @@ useEffect(() => {
                   <p className="sm:text-[25px] text-[20px] font-Agency">$00.00</p>
                 </div>
                 <div className="flex justify-center items-end pb-[20px]">
-                   <button onClick={openDonate} className="rounded-3xl text-[30px] font-Agency w-[80%] bg-[#d79920]">
+                   <button onClick={openDonate} className="rounded-3xl text-[24px] md:text-[30px] font-Agency w-[80%] bg-[#d79920]">
                       Contribute Now +
                     </button>
                 </div>    
@@ -369,13 +369,13 @@ useEffect(() => {
             </div>
 
 
-            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[70%] lg:w-[45%] h-[500px] border-2 border-[#3a6e01] rounded-[3rem] mr-[40px] mt-[30px] lg:mt-[0px]">
+            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[90%] md:mb-[0px] mb-[40px] lg:w-[45%] h-[500px] border-2 border-[#3a6e01] rounded-[3rem] mr-[40px] mt-[30px] lg:mt-[0px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
               <p className="text-[30px] font-semibold">Claim AiD</p>
               </div>
 
-              <div className="flex justify-between flex-col items-center m-auto w-[95%] h-[300px] bg-[#434139] rounded-3xl ">
+              <div className="flex justify-between flex-col items-center m-auto w-[95%] h-[300px] bg-[#434139] rounded-3xl">
                 <div className="pt-[30px]">
                   <p className="font-Agency text-[30px]">CLAIMABLE REWARDS</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
@@ -392,7 +392,7 @@ useEffect(() => {
                   <>
                     <p className="text-center mb-[10px]">{Math.floor(time/86400)}D: {Math.floor((time%86400)/3600)}H: {Math.floor((time%3600)/60)}M: {Math.floor(time%60)}S</p>
                     <button className="cursor-default rounded-3xl text-[30px] font-Agency w-[80%] border-2 border-gray">
-                      <p className="text-gray">CLAIM</p>
+                      <p className="text-gray text-[24px] md:text-[30px]">CLAIM</p>
                     </button>
                   </>
                 ):(

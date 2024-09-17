@@ -130,7 +130,7 @@ const SimpleSlider = () => {
   });
   return (
     <>
-      <div className=" w-full max-w-[90%] m-auto p-4">
+      <div className=" w-full sm:max-w-[90%] max-w-[98%]  m-auto p-4">
         <p className="mt-[40px] mb-[40px] leading-tight font-Agency text-[50px] sm:text-[80px] font-normal w-full">
           Bitcoin AiD Protocol - NFT Payment Queue
         </p>
