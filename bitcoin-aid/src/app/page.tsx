@@ -289,7 +289,7 @@ useEffect(() => {
 
   return (
     <main className="w-100 h-[full]">
-      <p className="text-blue-600 max-w-[100%]">{address}</p>
+      <p className="text-red-600 max-w-[100%]">{address}</p>
         {error && <Error msg={error} onClose={clearError} />}
         {alert && <Alert msg={alert} onClose={clearAlert}/>}
         {loading && (
