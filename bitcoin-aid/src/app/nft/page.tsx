@@ -165,15 +165,14 @@ const SimpleSlider = () => {
             </div>
           </div>
         </div>
-
         <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto custom-scroll slider-container p-2 mb-[100px] mt-[100px]">
           {queueData.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
-
             return hasUserData ? (
 
-            
+              
             <div key={index} className="mb-2 h-full">
+              
               <h2 className="text-xl font-semibold mb-[5px]">
                 Fila {index + 1}
               </h2>
@@ -226,6 +225,73 @@ const SimpleSlider = () => {
         })}
         </div>
       </div>
+
+
+
+
+
+
+
+
+
+      <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto custom-scroll slider-container p-2 mb-[100px] mt-[100px]">
+
+              
+            <div className="mb-2 h-full">
+              
+              <h2 className="text-xl font-semibold mb-[5px]">
+                
+              </h2>
+              <Slider 
+                
+                className="w-full sm:max-w-[90%] max-w-[100%] mx-auto h-full mt-[10px]"
+              >
+               
+                  <div className="mr-[10px]">
+                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
+                      <div className="">
+                        <h3>Posição da Fila:</h3>
+                      </div>
+                      <p>
+                        User:{" "}
+                        <span>
+                          
+                        </span>
+                      </p>
+                      <p>Prox: </p>
+                      <p>
+                        Anterior: 
+                      </p>
+                      <p>Index: </p>
+                      <p>
+                        Batch Level:
+                    
+                      </p>
+                      <p>
+                      
+                      </p>
+                    </div>
+                  </div>
+              </Slider>
+            </div>
+        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
       {addNftOpen ? (
         <div className="fixed inset-0 flex items-center justify-center z-50">
