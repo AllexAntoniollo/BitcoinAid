@@ -23,7 +23,7 @@ export default function RootLayout({
         <title>BTCA</title>
         <link rel="icon" href="/images/LogoBTCA-PNG.png" />
       </head>
-      <body className="bg-[#26251f]">
+      <body className="bg-gradient-to-t to-[#222222] from-[#2f2e27]">
         <WalletProvider> {/* Envolva o conteúdo com o WalletProvider */}
           <Header />
           <main className={franklin.className}>{children}</main>
