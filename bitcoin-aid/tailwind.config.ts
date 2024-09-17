@@ -13,6 +13,13 @@ const config: Config = {
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
+      screens: {
+        // Alterar o valor do breakpoint 'md'
+        'lg': '1200px',
+
+        // Adicionar um breakpoint personalizado chamado 'xl2'
+        'xl2': '1400px',
+      },
       fontFamily: {
         Agency: ['Agency', 'sans-serif'],
       },

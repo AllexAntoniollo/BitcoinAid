@@ -10,11 +10,7 @@ export default function Header() {
   const { address, setAddress } = useWallet();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const toggleMenu = () => {
-    setIsMenuOpen(prevState => !prevState);
-  };
+  
 
   const handleLogin = async () => {
     try {
@@ -85,16 +81,11 @@ export default function Header() {
   }, [address]);
 
   return (
-    <header className="bg-[#201f1b] border-b-4 border-[#eda921] p-2">
+    <header className="bg-[#201f1b] border-b-4 border-[#eda921] p-1">
       <div className="container sm:max-w-[90%] m-auto flex items-center max-w-[98%]">
-        <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={80} height={80} className="max-w-[15%] max-h-[15%]" />
+        <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={70} height={70} className="max-w-[15%] max-h-[15%]" />
         <p className="font-Agency text-[18px] sm:text-[22px]">BTCAiD</p>
         <div className="ml-auto flex items-center">
-          <button onClick={toggleMenu} className="sm:hidden mr-[12px]"><FaBars size={20}></FaBars></button>
-          <Link href="/"><p className="mr-[20px] hover:text-[#c5c5c5] hover:text-[17px] font-semibold hidden sm:block transition-all duration-300">Home</p></Link>
-          <Link href="/nft"><p className="mr-[20px] hover:text-[#c5c5c5] hover:text-[17px] font-semibold hidden sm:block transition-all duration-300">Dashboard</p></Link>
-          <Link href="/nft"><p className="mr-[20px] hover:text-[#c5c5c5] hover:text-[17px] font-semibold hidden sm:block transition-all duration-300">White Paper</p></Link>
-          <Link href="/nft"> <p className="mr-[20px] hover:text-[#c5c5c5] hover:text-[17px] font-semibold hidden sm:block transition-all duration-300">Nft's</p></Link>
           {address ? (
             <p className="text-[#eda921]">{`${address.slice(0, 6)}...${address.slice(-4)}`}</p>
           ) : (
@@ -107,30 +98,6 @@ export default function Header() {
           )}
         </div>
       </div>
-      {isMenuOpen && (
-        <div className="mt-[20px] w-[100%] menu sm:hidden animate-slide-down">
-          <Link href="/">
-            <div className="p-[8px] w-[100%] border-t-[2px] border-[#2c2b25] flex flex-col justify-center items-center cursor-pointer">
-              <p className="">Home</p>
-            </div>
-          </Link>
-          <Link href="/nft">
-            <div className="p-[8px] w-[100%] border-t-[2px] border-[#2c2b25] flex flex-col justify-center items-center cursor-pointer">
-              <p className="">Dashboard</p>
-            </div>
-          </Link>
-          <Link href="/nft">
-          <div className="p-[8px] w-[100%] border-t-[2px] border-[#2c2b25] flex flex-col justify-center items-center cursor-pointer">
-            <a className="">White Paper</a>
-          </div>
-          </Link>
-          <Link href="/nft">
-          <div className="p-[8px] w-[100%] border-t-[2px] border-[#2c2b25] flex flex-col justify-center items-center cursor-pointer">
-            <a className="">Nft's</a>
-          </div>
-          </Link>
-        </div>
-      )}
     </header>
   );
 }

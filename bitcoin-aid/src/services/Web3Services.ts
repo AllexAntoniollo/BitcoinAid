@@ -78,7 +78,16 @@ export async function approve(spender:string, amount:number) {
   return true;
 }
 
-export async function donate(amount:number,fifteenDays:boolean){
+export async function donation(amount:number,fifteenDays:boolean){
+  const provider = await getProvider();
+
+  const signer = await provider.getSigner();
+
+  const doDonate = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
+  const amountWei = ethers.parseUnits(amount.toString(), "ether");
+  const tx = await doDonate.donate(amountWei, fifteenDays);
+  await tx.wait();
+  return true;
 
 }
 

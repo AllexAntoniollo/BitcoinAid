@@ -1,23 +1,26 @@
 "use client";
-import { doLogin, allow, balance, approve, balanceDonationPool, userBalanceDonation, timeUntilNextWithDrawal, claim } from "@/services/Web3Services";
+import { donation, doLogin, allow, balance, approve, balanceDonationPool, userBalanceDonation, timeUntilNextWithDrawal, claim } from "@/services/Web3Services";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import Error from "@/componentes/erro";
 import Alert from "@/componentes/alert";
+import { TbLockAccess } from "react-icons/tb";
 import { useWallet } from "@/services/walletContext";
 import Image from "next/image";
 const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
 
 
 export default function Home() {
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(" ");
   const [alert, setAlert] = useState("");
   const [poolBalanceValue, setPoolBalanceValue] = useState<number | null>(null);
   const [balanceValue, setBalanceValue] = useState<number | null>(null);
   const [userBalanceValue, setUserBalanceValue] = useState<number | null>(null);
-  const { address, setAddress } = useWallet();
+  const {address, setAddress} = useWallet();
   const [isFifteenDays, setFifteenDays] = useState(true);
   const [donateOpen, setDonateOpen] = useState(false);
+  const [aproveOpen, setApproveOpen] = useState(false);
   const [value, setValue] = useState('');
   const [time, setTime] = useState<number>(0);
   const [tempo, setTempo] = useState<number>(0);
@@ -28,7 +31,7 @@ export default function Home() {
     time: number;
     level: number;
     fifteen: boolean;
-  }
+}
 
 const verifyAddress = (address:any) => {
   return ethers.isAddress(address);
@@ -36,9 +39,14 @@ const verifyAddress = (address:any) => {
 
 async function approveToken(address:string,value:number) {
   try{
+    setLoading(true);
+    setApproveOpen(false);
     if(DONATION_ADDRESS){
       const result = await approve(DONATION_ADDRESS,value);
-      if(result){await getAllowance(address, DONATION_ADDRESS)};
+      if(result){
+        await getAllowance(address, DONATION_ADDRESS);
+        setLoading(false);
+      };
     }
   }catch(err){
     setError("Erro no approve");
@@ -86,7 +94,7 @@ async function getAllowance(address:string, contract:string){
     }
   };
 
-  const verifyValue = () => {
+  const Donate = async() => {
     const intValue = parseInt(value, 10);
     let finalBalance = 0;
     if (balanceValue !== null) {
@@ -97,7 +105,17 @@ async function getAllowance(address:string, contract:string){
       setError("Você não pode enviar essa quantia de token");
       setDonateOpen(false);
     } else {
-      setError(""); // Limpa o erro se o valor for válido
+      setError("");
+      setLoading(true);
+      setDonateOpen(false); // Limpa o erro se o valor for válido
+      try{
+        const result = await donation(Number(value),isFifteenDays);
+        if(result){
+          setLoading(false);
+        }
+      }catch(err){
+        setError("Algo deu errado ao tentar realizar o donation");
+      }
     }
   };
 
@@ -223,6 +241,11 @@ useEffect(() => {
     }
   };
 
+  const handleApproveOpen = async () => {
+    setApproveOpen(prevState => !prevState);
+    setDonateOpen(false);
+  }
+
 useEffect(() => {
     const checkMetaMask = async () => {
       if (window.ethereum) {
@@ -264,13 +287,17 @@ useEffect(() => {
     checkMetaMask();
 })
 
-
   return (
-    <main className="w-100">
+    <main className="w-100 h-[full]">
         {error && <Error msg={error} onClose={clearError} />}
         {alert && <Alert msg={alert} onClose={clearAlert}/>}
+        {loading && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-10 h-10 border-t-4 border-b-4 border-[#d79920] rounded-full animate-spin"></div>
+    </div>
+  )}
         <div className="container min-h-screen max-w-[98%] lg:max-w-[90%] m-auto flex flex-wrap items-center p-[30px] lg:p-[60px]">
-          
+        
           <p className="leading-tight font-Agency text-[70px] sm:text-[90px] font-normal w-full">Bitcoin AiD Protocol</p>
           <div className="mt-[50px] w-full lg:max-w-[40%] max-w-[100%] border-l-2 border-[#282722] p-8 ">
             {poolBalanceValue ? (
@@ -306,7 +333,7 @@ useEffect(() => {
                 </div>
             )}
           </div>
-          <div className="cards w-[100%] lg:flex mt-[50px]">
+          <div className="mb-[30px] flex flex-wrap justify-center items-center cards w-[100%] mt-[50px]">
             <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[70%] lg:w-[45%] h-[500px] border-2 border-[#d79920] rounded-[3rem] mr-[40px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
@@ -317,21 +344,21 @@ useEffect(() => {
                 <div className="pt-[30px] pl-[8%]">
                   {address ? (
                     balanceValue !== null ? (
-                      <p className="text-[30px] font-Agency">Wallet Balance: {ethers.formatEther(balanceValue)} <span className="text-[#d79920]">AiD</span></p>
+                      <p className="sm:text-[30px] text-[25px] font-Agency">Wallet Balance: {ethers.formatEther(balanceValue)} <span className="text-[#d79920]">AiD</span></p>
                     ) : (
-                      <p className="text-[30px] font-Agency">Wallet Balance: 00.0000<span className="text-[#d79920]">AiD</span></p>
+                      <p className="sm:text-[30px] text-[25px] font-Agency">Wallet Balance: 00.0000<span className="text-[#d79920]">AiD</span></p>
                     ) 
                   ) : (
-                    <p className="text-[30px] font-Agency">Wallet Balance: ------</p>
+                    <p className="sm:text-[30px] text-[25px]  font-Agency">Wallet Balance: ------</p>
                   )}
-                  <p className="text-[25px] font-Agency">$235.62</p>
+                  <p className="sm:text-[25px] text-[20px] font-Agency">$235.62</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
-                    <p className="text-[30px] font-Agency">Total Contributed: {Number(userBalanceValue)/1000000} <span className="text-[#d79920]">AiD</span></p>
+                    <p className="sm:text-[30px] text-[25px] font-Agency">Total Contributed: {Number(userBalanceValue)/1000000} <span className="text-[#d79920]">AiD</span></p>
                   ):(
-                    <p className="text-[30px] font-Agency">Total Contributed: ---- <span className="text-[#d79920]">AiD</span></p>
+                    <p className="sm:text-[30px] text-[25px] font-Agency">Total Contributed: ---- <span className="text-[#d79920]">AiD</span></p>
                   )}
                   
-                  <p className="text-[25px] font-Agency">$00.00</p>
+                  <p className="sm:text-[25px] text-[20px] font-Agency">$00.00</p>
                 </div>
                 <div className="flex justify-center items-end pb-[20px]">
                    <button onClick={openDonate} className="rounded-3xl text-[30px] font-Agency w-[80%] bg-[#d79920]">
@@ -363,7 +390,7 @@ useEffect(() => {
                 <p className="text-center mb-[2px]">Time to Claim</p>
                 { time !== 0 || userBalanceValue == 0 || userBalanceValue == undefined ? (
                   <>
-                    <p className="text-center mb-[10px]">{Math.floor(time/86400)}D: {Math.floor(time/3600)}H: {Math.floor(time/60)}M: {Math.floor(time%60)}S</p>
+                    <p className="text-center mb-[10px]">{Math.floor(time/86400)}D: {Math.floor((time%86400)/3600)}H: {Math.floor((time%3600)/60)}M: {Math.floor(time%60)}S</p>
                     <button className="cursor-default rounded-3xl text-[30px] font-Agency w-[80%] border-2 border-gray">
                       <p className="text-gray">CLAIM</p>
                     </button>
@@ -401,9 +428,9 @@ useEffect(() => {
                 <button onClick={handleMaxClick} className="text-[#eda921] ml-[10px] font-bold mt-[3px]">MAX</button>
                 <div className="w-full flex flex-col items-center mb-[15px] mt-[10px]">
                   {Number(allowance) >= Number(value) ? (
-                     <button onClick={verifyValue} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Contribute</button>
+                     <button onClick={Donate} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Contribute</button>
                   ) : verifyAddress(address) ? (
-                    <button onClick={()=>approveToken(address,Number(value))} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Approve</button>
+                    <button onClick={handleApproveOpen} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Approve</button>
                   ):  (
                     ""
                   )}
@@ -425,7 +452,27 @@ useEffect(() => {
          
         ) : ("")}
 
+        {aproveOpen ? (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black opacity-80" onClick={handleApproveOpen}></div>
+            <div className="relative items-center justify-center flex bg-[#201f1b] border-2 border-[#eda921] p-6 rounded-lg shadow-lg w-[80%] max-w-lg z-10">
+              {verifyAddress(address) ? (
+                <>
+                <div className="w-[100%] flex items-center justify-center flex-col">                
+                  <TbLockAccess className="border-2 text-[80px] rounded-full p-[20px] border-white"/> 
+                  <p className="font-Agency text-[35px] mt-[10px]">Unlock AiD Token</p>
+                  <p className="text-center text-[18px] mt-[6px]">We need your permission to move {value} AiD on your behalf</p>
+                  <button onClick={()=>approveToken(address,Number(value))} className=" font-semibold rounded-3xl bg-[#eda921] px-[30px] py-[12px] my-[20px]">Approve {value} Aid</button>
+                 </div>
+                </>
+              ):("")}
+            </div>
+        </div>
+        ): (
+          ""
+        )}
     </main>
   );   
 }
+
 
