@@ -289,6 +289,7 @@ useEffect(() => {
 
   return (
     <main className="w-100 h-[full]">
+      <p>{address}</p>
         {error && <Error msg={error} onClose={clearError} />}
         {alert && <Alert msg={alert} onClose={clearAlert}/>}
         {loading && (
