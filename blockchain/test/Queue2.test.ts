@@ -108,22 +108,37 @@ describe("Queue Distribution", function () {
       btca,
       multicall,
     } = await loadFixture(deployFixture);
-    await btca.transfer(queueAddress, ethers.parseUnits("350", "ether"));
-    await queue.incrementBalance(ethers.parseUnits("348.5", "ether"));
+    await btca.transfer(queueAddress, ethers.parseUnits("100000", "ether"));
+    await queue.incrementBalance(ethers.parseUnits("100000", "ether"));
+
+    //FILA 1
     await queue.connect(otherAccount).addToQueue(1);
     await queue.connect(otherAccount).addToQueue(1);
     await queue.connect(otherAccount).addToQueue(1);
 
     await collection.mint(1);
-    await queue.connect(otherAccount).addToQueue(1);
+    //FILA 2
 
     await collection.mint(100);
+    //Fila 3
+
+    await collection.mint(100);
+    //Fila 4
+    await queue.connect(otherAccount).addToQueue(1);
 
     await multicall.depositNFT(1);
     await multicall.depositNFT(1);
     await multicall.depositNFT(1);
 
-    await multicall.multiCall();
-    console.log(await queue.getQueueDetails(2));
+    try {
+      await multicall.multiCall();
+    } catch (error: any) {
+      console.log(error.message);
+    }
+    console.log(await queue.getQueueDetails(4));
+
+    console.log(
+      ethers.formatEther(await btca.balanceOf(await multicall.getAddress()))
+    );
   });
 });

@@ -69,7 +69,7 @@ contract MultiCall is Ownable, ERC1155Holder {
     }
 
     function multiCall() external onlyOwner {
-        require(tokenIds.length > 0, "No nfts");
+        require(tokenIds.length > 0, "No nfts on the contract");
 
         uint queueId = BTCACollection.getCurrentBatch();
         uint lastUnpaidQueue = queueDistribution.getLastUnpaidQueue();
@@ -99,7 +99,7 @@ contract MultiCall is Ownable, ERC1155Holder {
                 ++index;
                 allUsers += value;
             }
-            require(size[0] < 4, "Impossible");
+            require(size[0] < 4, "Last unpaid queue >= 4 queue completed");
             if (size[0] == 1) {
                 if (allUsers == size[0]) {
                     uint256 tokenId1 = tokenIds[0];
@@ -121,20 +121,33 @@ contract MultiCall is Ownable, ERC1155Holder {
                         }
                         require(batchSum <= 2, "Batch size exceeds limit");
                         if (batchSum == 1) {
-                            uint256 tokenId1 = tokenIds[0];
-                            uint256 tokenId2 = tokenIds[1];
-
-                            removeTokenIdAtIndex(0);
-                            removeTokenIdAtIndex(0);
-
-                            queueDistribution.addToQueue(tokenId1);
-                            queueDistribution.addToQueue(tokenId2);
+                            if (size[size.length - 1] == 0) {
+                                uint256 tokenId1 = tokenIds[0];
+                                uint256 tokenId2 = tokenIds[1];
+                                removeTokenIdAtIndex(0);
+                                removeTokenIdAtIndex(0);
+                                queueDistribution.addToQueue(tokenId1);
+                                queueDistribution.addToQueue(tokenId2);
+                            } else {
+                                uint256 tokenId1 = tokenIds[0];
+                                removeTokenIdAtIndex(0);
+                                queueDistribution.addToQueue(tokenId1);
+                            }
                         } else if (batchSum == 2) {
                             uint256 tokenId1 = tokenIds[0];
 
                             removeTokenIdAtIndex(0);
 
                             queueDistribution.addToQueue(tokenId1);
+                        } else if (batchSum == 0) {
+                            uint256 tokenId1 = tokenIds[0];
+                            uint256 tokenId2 = tokenIds[1];
+                            removeTokenIdAtIndex(0);
+                            removeTokenIdAtIndex(0);
+                            queueDistribution.addToQueue(tokenId1);
+                            queueDistribution.addToQueue(tokenId2);
+                        } else {
+                            require(false, "Algum erro");
                         }
                     } else {
                         uint256 tokenId1 = tokenIds[0];
@@ -164,13 +177,9 @@ contract MultiCall is Ownable, ERC1155Holder {
                             batchSum += size[i];
                         }
                         require(batchSum <= 1, "Batch size exceeds limit");
-                        if (batchSum == 1) {
-                            uint256 tokenId1 = tokenIds[0];
-
-                            removeTokenIdAtIndex(0);
-
-                            queueDistribution.addToQueue(tokenId1);
-                        }
+                        uint256 tokenId1 = tokenIds[0];
+                        removeTokenIdAtIndex(0);
+                        queueDistribution.addToQueue(tokenId1);
                     } else {
                         uint256 tokenId1 = tokenIds[0];
 
@@ -189,13 +198,15 @@ contract MultiCall is Ownable, ERC1155Holder {
                     queueDistribution.addToQueue(tokenId1);
                 } else {
                     if (size.length > 2) {
-                        require(false, "Batch size exceeds limit");
-                    } else {
-                        uint256 tokenId1 = tokenIds[0];
-                        removeTokenIdAtIndex(0);
-                        queueDistribution.addToQueue(tokenId1);
-                        console.log("Adicionou");
+                        uint batchSum = 0;
+                        for (uint i = 1; i < size.length - 1; i++) {
+                            batchSum += size[i];
+                        }
+                        require(batchSum == 0, "Batch size exceeds limit");
                     }
+                    uint256 tokenId1 = tokenIds[0];
+                    removeTokenIdAtIndex(0);
+                    queueDistribution.addToQueue(tokenId1);
                 }
                 uint position = queueDistribution.getCurrentIndex();
 
