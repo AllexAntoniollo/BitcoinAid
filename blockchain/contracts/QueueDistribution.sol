@@ -48,7 +48,7 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
 
     mapping(uint256 => uint256) public headByBatch;
     mapping(uint256 => uint256) public tailByBatch;
-    mapping(uint256 => uint256) public queueSizeByBatch;
+    mapping(uint256 => uint256) private queueSizeByBatch;
     mapping(uint256 => mapping(uint256 => QueueEntry)) public queueByBatch;
     uint public lastUnpaidQueue;
 
@@ -122,6 +122,18 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
 
     function getCurrentIndex() external view returns (uint) {
         return currentIndex;
+    }
+
+    function getQueueSizeByBatch(uint batch) external view returns (uint) {
+        return queueSizeByBatch[batch];
+    }
+
+    function getLastUnpaidQueue() external view returns (uint) {
+        uint last = lastUnpaidQueue;
+        while (queueSizeByBatch[last] == 0 && last <= 100) {
+            ++last;
+        }
+        return last;
     }
 
     function incrementBalance(uint amount) external onlyDonation {

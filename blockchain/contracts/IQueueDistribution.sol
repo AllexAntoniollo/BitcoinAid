@@ -9,4 +9,8 @@ interface IQueueDistribution {
     function addToQueue(uint256 tokenId) external;
 
     function getCurrentIndex() external view returns (uint);
+
+    function getLastUnpaidQueue() external view returns (uint);
+
+    function getQueueSizeByBatch(uint batch) external view returns (uint);
 }
