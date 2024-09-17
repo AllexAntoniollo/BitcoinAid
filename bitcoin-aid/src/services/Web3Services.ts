@@ -137,10 +137,9 @@ export async function claim(){
 }
 
 export async function getQueue(batchLevel:number) : Promise<nftQueue[]>{
-  const provider = await getProvider();
-  const signer = await provider.getSigner();
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
 
-  const queueContract = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, signer);
+  const queueContract = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, provider);
 
   const getQueueDetails:nftQueue[] = await queueContract.getQueueDetails(batchLevel);
   return getQueueDetails;
@@ -156,10 +155,9 @@ export async function addQueue(batch:number){
 }
 
 export async function getCurrentBatch(){
-  const provider = await getProvider();
-  const signer = await provider.getSigner();
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
 
-  const collectionContract = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+  const collectionContract = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, provider);
 
   const currentBatch = await collectionContract.getCurrentBatch();
   return currentBatch;
