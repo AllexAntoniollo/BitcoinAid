@@ -1,7 +1,11 @@
 "use client";
+import {ethers} from "ethers"
 import { useEffect } from "react";
 import { useState } from "react";
+import { useWallet } from "@/services/walletContext";
 import Slider from "react-slick";
+import Error from "@/componentes/erro";
+import Alert from "@/componentes/alert";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import {
@@ -9,15 +13,21 @@ import {
   getCurrentBatch,
   addQueue,
   mintNft,
+  nftPrice,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
 import Image from "next/image";
 
 const SimpleSlider = () => {
+  const [loading, setLoading] = useState(false);
   const [queueData, setQueueData] = useState<nftQueue[][]>([]);
-  const [currentBatch, setCurrentBatch] = useState<Number>(0);
+  const [currentBatch, setCurrentBatch] = useState<number>(0);
   const [addNftOpen, setNftAddOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<number | "">("");
+  const [nftCurrentPrice, setNftCurrentPrice] = useState<number>(0);
+  const [error, setError] = useState("");
+  const [alert, setAlert] = useState("");
+  const {address, setAddress} = useWallet();
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Converte o valor para um número, se possível
@@ -30,39 +40,67 @@ const SimpleSlider = () => {
     addQueue(Number(inputValue));
   };
 
-  const buyNft = () => {
-    mintNft(1);
+  const buyNft = async () => {
+    try{
+      setLoading(true);
+      const result = await mintNft(1);
+      if(result){
+        setLoading(false);
+        setAlert("Congratulations on purchasing your NFT")
+      }else{
+        setError("Failed to purchase nft")
+        setLoading(false);
+      }
+    }catch(err){
+      setLoading(false);
+      setError("Failed to purchase nft");
+    }
   };
 
   const openAddNft = () => {
     setNftAddOpen((prevState) => !prevState);
   };
 
-  useEffect(() => {
-    const fetchQueue = async () => {
-      try {
-        const result = await getCurrentBatch();
-        setCurrentBatch(result);
-        console.log("lote: %d", result);
+  async function getNftPrice(currentBatch:number){
+    try{
+      const result = await nftPrice(currentBatch);
+      setNftCurrentPrice(result);
+    }catch(err){
+      setError("Failed on get NFT's price")
+    }
+  }
 
-        const lote = currentBatch;
-        const promises = [];
-        for (let i = 1; i <= result; i++) {
-          promises.push(getQueue(i));
-        }
-        const results = await Promise.all(promises);
-        if(results == undefined || results == null){
-          alert("Veio tudo vazio")
-        }
-        setQueueData(results);
-        console.log("resultado ", results);
-      } catch (err) {
-        console.log(err);
+  const clearError = () => {
+    setError("");
+  }
+  const clearAlert = () => {
+    setAlert("");
+  }
+
+  const fetchQueue = async () => {
+    try {
+      const result = await getCurrentBatch();
+      setCurrentBatch(result);
+      const promises = [];
+      for (let i = 1; i <= result; i++) {
+        promises.push(getQueue(i));
       }
-    };
+      const results = await Promise.all(promises);
+      setQueueData(results);
+      console.log("resultado ", results);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  useEffect(() => {
     fetchQueue();
-    alert("testando alerta")
   }, []);
+
+  useEffect(() => {
+    if(currentBatch){
+      getNftPrice(currentBatch);
+    }
+  },[currentBatch])
 
   const settings = (dataSetLength: number) => ({
     dots: true,
@@ -120,12 +158,22 @@ const SimpleSlider = () => {
   });
   return (
     <>
+    
+    {error && <Error msg={error} onClose={clearError} />}
+    {alert && <Alert msg={alert} onClose={clearAlert}/>}
+    {loading && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-10 h-10 border-t-4 border-b-4 border-[#d79920] rounded-full animate-spin"></div>
+    </div>
+  )}
+
       <div className=" w-full sm:max-w-[90%] max-w-[98%]  m-auto p-4">
         <p className="mt-[40px] mb-[40px] leading-tight font-Agency text-[50px] sm:text-[80px] font-normal w-full">
           Bitcoin AiD Protocol - NFT Payment Queue
         </p>
-        <div className="mx-auto lg:w-[35%] w-[90%] bg-[#26251f35] rounded-3xl mb-[10px] flex flex-col p-[10px] ">
-          <p className="font-Agency mx-auto text-[40px]">Buy NFT - Lote #4</p>
+        <div className=" mx-auto lg:w-[35%] w-[90%] bg-[#26251f35] rounded-3xl mb-[10px] flex flex-col py-[30px] shadow-lg glossy">
+          <div className="glossy-content flex items-center justify-center flex-col">
+          <p className="font-Agency mx-auto text-[40px]">{currentBatch ? `Buy NFT - Lote #${currentBatch}` : 'Loading...'}</p>
           <Image
             src="/images/NFTSATOSHI.png"
             alt="NFT"
@@ -133,17 +181,18 @@ const SimpleSlider = () => {
             height={1000}
             className="mx-auto max-w-[60%] max-h-[55%]"
           ></Image>
-          <p className="font-Agency mx-auto text-[25px] mt-[10px]">$10</p>
+          <p className="font-Agency mx-auto text-[25px] mt-[10px]">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."}</p>
           <button
             onClick={buyNft}
             className="mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px]"
           >
             Buy Nft
           </button>
+          </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:justify-between md:gap-6 mb-[30px]">
-          <div className="mx-auto mr-[30px] md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4">
+        <div className="flex flex-col md:flex-row md:justify-between md:gap-6 mb-[30px] mt-[25px]">
+          <div className="mx-auto mr-[30px] md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4  border-2 border-[#d79920]">
             <p className="font-Agency text-center text-[25px] mt-[20px]">
               Add your NFT's to Queue
             </p>
@@ -157,7 +206,7 @@ const SimpleSlider = () => {
             </div>
           </div>
 
-          <div className="mx-auto md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4">
+          <div className="mx-auto md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4 border-2 border-[#3a6e01]">
             <p className="font-Agency text-center text-[25px] mt-[20px]">
               Claim NFT's Rewards
             </p>
@@ -168,7 +217,7 @@ const SimpleSlider = () => {
             </div>
           </div>
         </div>
-        <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto custom-scroll slider-container p-2 mb-[100px] mt-[100px]">
+        <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto slider-container p-2 mb-[100px] mt-[100px]">
           {queueData.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
             return hasUserData ? (
@@ -181,12 +230,13 @@ const SimpleSlider = () => {
               </h2>
               <Slider 
                 {...settings(dataSet.length)}
-                className="w-full sm:max-w-[90%] max-w-[100%] mx-auto h-full mt-[10px]"
+                className="w-full sm:max-w-[90%] max-w-[90%] mx-auto h-full mt-[10px]"
               >
                 {dataSet.map((item, itemIndex) => (
-                  item.user ? (
+                  item.user && item.user.toLowerCase() === address ?(
                   <div key={itemIndex} className="mr-[10px]">
-                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
+                    
+                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando ">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
@@ -218,12 +268,48 @@ const SimpleSlider = () => {
                       </p>
                     </div>
                   </div>
-                  ) : (
+                  ) : item.user ? (
+                    <div key={itemIndex} className="mr-[10px]">
+                    
+                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d">
+                      <div className="">
+                        <h3>Posição da Fila: {itemIndex + 1}</h3>
+                      </div>
+                      <p>
+                        User:{" "}
+                        <span>
+                          {" "}
+                          {item.user
+                            ? `${item.user.slice(0, 6)}...${item.user.slice(
+                                -4
+                              )}`
+                            : "N/A"}
+                        </span>
+                      </p>
+                      <p>Prox: {item.next ? item.next.toString() : "N/A"}</p>
+                      <p>
+                        Anterior: {item.prev ? item.prev.toString() : "N/A"}
+                      </p>
+                      <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
+                      <p>
+                        Batch Level:{" "}
+                        {item.batchLevel ? item.batchLevel.toString() : "N/A"}
+                      </p>
+                      <p>
+                        Dollars Claimed:{" "}
+                        {item.dollarsClaimed
+                          ? item.dollarsClaimed.toString()
+                          : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  ):(
                     ""
                   )
                 ))}
               </Slider>
-            </div>
+              <p className="font-Agency ml-[100px] text-[20px]">** Your nfts are blinking in the queue</p>
+            </div> 
             ) : null
         })}
         </div>

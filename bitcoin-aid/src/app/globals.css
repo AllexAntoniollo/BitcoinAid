@@ -52,15 +52,8 @@ input[type="number"] {
   }
 }
 /* globals.css ou outro arquivo CSS global */
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+body{
+  color: white;
 }
 
 @layer utilities {
@@ -126,4 +119,127 @@ body {
   100% {
     opacity: 1;
   }
+}
+
+
+/* FIREWORKS ANIMATION */
+.firework-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.firework {
+  position: relative;
+  width: 4px;
+  height: 80px;
+  background-color: transparent;
+  animation: shoot 1s ease-in forwards, explode 0.5s ease-out 1s forwards;
+}
+
+.spark {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background-color: red;
+  border-radius: 50%;
+  animation: sparkle 1s ease-out 1s forwards;
+}
+
+@keyframes shoot {
+  from {
+    bottom: 0;
+    left: 50%;
+  }
+  to {
+    bottom: 50%;
+    left: calc(50% + 20px);
+  }
+}
+
+@keyframes explode {
+  from {
+    opacity: 1;
+    transform: scale(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+@keyframes sparkle {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.5);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) scale(1);
+  }
+}
+
+.spark:nth-child(1) {
+  --x: 20px;
+  --y: -40px;
+}
+.spark:nth-child(2) {
+  --x: -20px;
+  --y: -40px;
+}
+.spark:nth-child(3) {
+  --x: 30px;
+  --y: -10px;
+}
+.spark:nth-child(4) {
+  --x: -30px;
+  --y: -10px;
+}
+.spark:nth-child(5) {
+  --x: 40px;
+  --y: 10px;
+}
+.spark:nth-child(6) {
+  --x: -40px;
+  --y: 10px;
+}
+
+/*shine animation */
+
+/* styles/globals.css ou styles/animation.css */
+@keyframes shine {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+.glossy {
+  position: relative;
+  overflow: hidden;
+  background: #26251f35; /* Cor de fundo do card */
+}
+
+.glossy::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.2) 25%, transparent 50%, rgba(255, 255, 255, 0.2) 75%);
+  background-size: 200% 100%;
+  animation: shine 2s infinite;
+  
+}
+
+.glossy-content {
+  position: relative;
+
 }

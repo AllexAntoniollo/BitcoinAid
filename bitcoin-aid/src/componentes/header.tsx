@@ -4,7 +4,6 @@ import Image from "next/image";
 import { doLogin } from "@/services/Web3Services";
 import Link from "next/link";
 import { useWallet } from "@/services/walletContext";
-import { FaBars } from "react-icons/fa";
 
 export default function Header() {
   const { address, setAddress } = useWallet();

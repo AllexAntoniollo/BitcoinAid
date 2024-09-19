@@ -49,6 +49,7 @@ async function approveToken(address:string,value:number) {
       };
     }
   }catch(err){
+    setLoading(false);
     setError("Erro no approve");
   }
 }
@@ -114,7 +115,8 @@ async function getAllowance(address:string, contract:string){
           setLoading(false);
         }
       }catch(err){
-        setError("Algo deu errado ao tentar realizar o donation");
+        setLoading(false);
+        setError("Something went wrong");
       }
     }
   };
@@ -142,7 +144,7 @@ async function getAllowance(address:string, contract:string){
         setBalanceValue(result);
       } else {
         setBalanceValue(0);
-        setError("Deu pau");
+        setError("");
       }
     } catch (err) {
       setError("Erro ao buscar o saldo");
@@ -178,13 +180,21 @@ async function getAllowance(address:string, contract:string){
   }
 
   async function doClaim() {
+    setLoading(true);
     try{
       const ok = await claim();
       if(ok){
-        setAlert("Sucesso no Claim");
+        setLoading(false);
+        setAlert(`Your $${Number(userBalanceValue)/1000000} dollars in AiD are now available in your wallet`);
+        if(address){
+        await getUserBalance(address);
+        }
+      }else{
+        setLoading(false);
+        setError("It was not possible to make the withdraw, try again");
       }
     }catch{
-      setError("Erro ao realizar o Claim");
+      setError("It was not possible to make the withdraw, try again");
     }
   }
 
@@ -208,7 +218,7 @@ useEffect(() => {
     }else{
       setTime(0);
     }
-  }, [address]);
+  }, [address, userBalanceValue]);
 
   useEffect(() => {
     let start = Date.now(); // Obtém o tempo inicial
@@ -289,7 +299,6 @@ useEffect(() => {
 
   return (
     <main className="w-100 h-[full]">
-      <p className="text-green-600 max-w-[100%]">{address}</p>
         {error && <Error msg={error} onClose={clearError} />}
         {alert && <Alert msg={alert} onClose={clearAlert}/>}
         {loading && (
@@ -297,7 +306,7 @@ useEffect(() => {
       <div className="w-10 h-10 border-t-4 border-b-4 border-[#d79920] rounded-full animate-spin"></div>
     </div>
   )}
-        <div className="container min-h-screen max-w-[98%] lg:max-w-[90%] m-auto flex flex-wrap items-center p-[30px] lg:p-[60px]">
+        <div className="container min-h-screen max-w-[98%] lg:max-w-[90%] m-auto flex flex-wrap items-center p-[20px] lg:p-[60px]">
         
           <p className="leading-tight font-Agency text-[70px] sm:text-[90px] font-normal w-full">Bitcoin AiD Protocol</p>
           <div className="mt-[50px] w-full lg:max-w-[40%] max-w-[100%] border-l-2 border-[#282722] p-8 ">
@@ -334,14 +343,14 @@ useEffect(() => {
                 </div>
             )}
           </div>
-          <div className="mb-[30px] flex flex-wrap justify-center items-center cards w-[100%] mt-[50px]">
-            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[90%] lg:w-[45%] h-[500px] border-2 border-[#d79920] rounded-[3rem] mr-[40px]">
+          <div className="mb-[50px] flex flex-wrap justify-center items-center cards w-[100%] mt-[50px]">
+            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[98%] lg:w-[45%] border-2 border-[#d79920] rounded-[3rem] lg:mr-[40px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
               <p className="text-[30px] font-semibold">Contribute AiD</p>
               </div>
 
-              <div className="flex flex-col justify-between m-auto w-[95%] h-[300px] bg-[#434139] rounded-3xl ">
+              <div className="flex flex-col justify-between m-auto w-[100%] sm:w-[95%] h-[300px] bg-[#434139] rounded-3xl mb-[20px]">
                 <div className="pt-[30px] pl-[8%]">
                   {address ? (
                     balanceValue !== null ? (
@@ -354,12 +363,10 @@ useEffect(() => {
                   )}
                   <p className="sm:text-[25px] text-[20px] font-Agency">$235.62</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
-                    <p className="sm:text-[30px] text-[25px] font-Agency">Total Contributed: {Number(userBalanceValue)/1000000} <span className="text-[#d79920]">AiD</span></p>
+                    <p className="sm:text-[30px] text-[25px] font-Agency mt-[20px]">Total Contributed: {Number(userBalanceValue)/1000000} <span className="text-[#d79920]">$</span></p>
                   ):(
-                    <p className="sm:text-[30px] text-[25px] font-Agency">Total Contributed: ---- <span className="text-[#d79920]">AiD</span></p>
+                    <p className="sm:text-[30px] text-[25px] font-Agency mt-[20px]">Total Contributed: ---- <span className="text-[#d79920]">AiD</span></p>
                   )}
-                  
-                  <p className="sm:text-[25px] text-[20px] font-Agency">$00.00</p>
                 </div>
                 <div className="flex justify-center items-end pb-[20px]">
                    <button onClick={openDonate} className="rounded-3xl text-[24px] md:text-[30px] font-Agency w-[80%] bg-[#d79920]">
@@ -370,22 +377,20 @@ useEffect(() => {
             </div>
 
 
-            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[90%] md:mb-[0px] mb-[40px] lg:w-[45%] h-[500px] border-2 border-[#3a6e01] rounded-[3rem] mr-[40px] mt-[30px] lg:mt-[0px]">
+            <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[98%] md:mb-[0px] mb-[40px] lg:w-[45%] border-2 border-[#3a6e01] rounded-[3rem] lg:mr-[40px] mt-[30px] lg:mt-[0px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
               <p className="text-[30px] font-semibold">Claim AiD</p>
               </div>
 
-              <div className="flex justify-between flex-col items-center m-auto w-[95%] h-[300px] bg-[#434139] rounded-3xl">
+              <div className="flex justify-between flex-col items-center mb-[20px] m-auto w-[100%] sm:w-[95%] h-[300px] bg-[#434139] rounded-3xl">
                 <div className="pt-[30px]">
                   <p className="font-Agency text-[30px]">CLAIMABLE REWARDS</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
-                     <p className="font-Agency text-center text-[28px]">{Number(userBalanceValue)/1000000}<span className="text-[#d79920]">AiD</span></p>
+                     <p className="font-Agency text-center text-[45px] mt-[15px]">{Number(userBalanceValue)/1000000}<span className="text-[#d79920]">$</span></p>
                   ) : (
-                    <p className="font-Agency text-center text-[28px]">---- <span className="text-[#d79920]">AiD</span></p>
+                    <p className="font-Agency text-center text-[45px] mt-[15px]">---- <span className="text-[#d79920]">$</span></p>
                   )}
-                 
-                  <p className="font-Agency text-center text-[23px]">$00.00</p>
                 </div>
                 <div className="flex flex-col justify-end items-center pb-[20px] w-full">
                 <p className="text-center mb-[2px]">Time to Claim</p>

@@ -171,6 +171,21 @@ export async function mintNft(quantity:number){
 
   const collectionContract = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
 
-  await collectionContract.mint(quantity);
+  try{
+    const tx = await collectionContract.mint(quantity);
+    await tx.wait();
+    return true;
+  }catch(err){
+    return false;
+  }
+
 }
 
+export async function nftPrice(batch:number){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
+
+  const collectionContract = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, provider);
+
+  const price = await collectionContract.getBatchPrice(batch);
+  return price;
+}
