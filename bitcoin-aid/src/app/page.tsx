@@ -50,23 +50,22 @@ async function approveToken(address:string,value:number) {
     }
   }catch(err){
     setLoading(false);
-    setError("Erro no approve");
+    setError(`Erro no approve ${address}`);
   }
 }
 async function getAllowance(address:string, contract:string){
   try{
     const result = await allow(address, contract);
-    let etherValue = ethers.formatEther(result);
-    const etherNumber = parseFloat(etherValue);
     if(result){
+      let etherValue = ethers.formatEther(result);
+      const etherNumber = parseFloat(etherValue);
       await setAllowance(etherNumber);
       console.log("Total etherValue %d", etherNumber);
-
     }else{
       setAllowance(0);
     }
   }catch(err){
-    setError("Erro ao conferir permissao")
+    setError(`Erro ao conferir permissao ${address}`);
   }
 }
   async function getTime(address:string) {
@@ -74,7 +73,7 @@ async function getAllowance(address:string, contract:string){
       const result = await timeUntilNextWithDrawal(address);
       setTime(Number(result));
     }catch{
-      setError("Erro no getTime");
+      setError(`Erro no getTime ${address}`);
     }
       
   }
@@ -147,7 +146,7 @@ async function getAllowance(address:string, contract:string){
         setError("");
       }
     } catch (err) {
-      setError("Erro ao buscar o saldo");
+      setError(`Erro ao buscar o saldo ${address}`);
     }
   }
 
@@ -162,7 +161,7 @@ async function getAllowance(address:string, contract:string){
         setUserBalanceValue(0); // Correção para lidar com endereços nulos
       }
     } catch (err) {
-      setError("Erro ao buscar valor doado");
+      setError(`Erro ao buscar valor doado ${address}`);
     }
   }
 
