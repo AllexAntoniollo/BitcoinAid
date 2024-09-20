@@ -6,6 +6,7 @@ import Error from "@/componentes/erro";
 import Alert from "@/componentes/alert";
 import { TbLockAccess } from "react-icons/tb";
 import { useWallet } from "@/services/walletContext";
+import { SiPolygon } from "react-icons/si";
 import Image from "next/image";
 const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
 
@@ -205,7 +206,6 @@ useEffect(() => {
         setBalanceValue(0);
       }
     }
-
     fetchBalance();
     getPoolBalance();
     if (address) {
@@ -305,6 +305,8 @@ useEffect(() => {
       <div className="w-10 h-10 border-t-4 border-b-4 border-[#d79920] rounded-full animate-spin"></div>
     </div>
   )}
+
+
         <div className="container min-h-screen max-w-[98%] lg:max-w-[90%] m-auto flex flex-wrap items-center p-[20px] lg:p-[60px]">
         
           <p className="leading-tight font-Agency text-[70px] sm:text-[90px] font-normal w-full">Bitcoin AiD Protocol</p>
@@ -324,19 +326,19 @@ useEffect(() => {
           <div className="btn-days w-full">
             {isFifteenDays ? (
                 <div className="mt-[50px]">
-                  <button className="sm:w-[120px] w-[100px] mr-[15px] bg-[#d79920] p-[10px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] hover:p-[10px] sm:text-[15px] font-semibold">
-                    <p className="sm:text-[20px] text-[16px] font-semibold">15 Days</p>
+                  <button className="shadow-lg glossy_cta hover:bg-[#b7831c]  mr-[15px] bg-[#d79920] px-[20px] py-[8px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] sm:text-[15px] font-semibold">
+                    <p className=" sm:text-[20px] text-[16px] font-semibold">15 Days</p>
                   </button>
-                  <button onClick={toggle} className="sm:w-[120px] w-[100px] p-[8px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] hover:p-[10px] sm:text-[15px] font-semibold">
+                  <button onClick={toggle} className=" px-[20px] py-[8px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] sm:text-[15px] font-semibold">
                     <p className="sm:text-[20px] text-[16px] font-semibold">30 Days</p>
                   </button>
                 </div>
             ) : (
               <div className="mt-[50px]">
-                  <button onClick={toggle} className="sm:w-[120px] w-[100px] p-[8px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] hover:p-[10px] sm:text-[15px] font-semibold">
+                  <button onClick={toggle} className=" px-[20px] py-[8px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] sm:text-[15px] font-semibold">
                     <p className="sm:text-[20px] text-[16px] font-semibold">15 Days</p>
                   </button>
-                  <button className="sm:w-[120px] w-[100px] ml-[15px] bg-[#d79920] p-[10px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] hover:p-[10px] sm:text-[15px] font-semibold">
+                  <button className="shadow-lg glossy_cta hover:bg-[#b7831c] ml-[15px] bg-[#d79920] px-[20px] py-[8px] border-2 rounded-full border-[#eda921] transition-all duration-300 hover:border-[#bb8312] sm:text-[15px] font-semibold">
                     <p className="sm:text-[20px] text-[16px] font-semibold">30 Days</p>
                   </button>
                 </div>
@@ -368,7 +370,7 @@ useEffect(() => {
                   )}
                 </div>
                 <div className="flex justify-center items-end pb-[20px]">
-                   <button onClick={openDonate} className="rounded-3xl text-[24px] md:text-[30px] font-Agency w-[80%] bg-[#d79920]">
+                   <button onClick={openDonate} className="shadow-lg glossy_cta hover:bg-[#b7831c] rounded-3xl text-[24px] md:text-[30px] font-Agency w-[80%] bg-[#d79920]">
                       Contribute Now +
                     </button>
                 </div>    
@@ -433,9 +435,9 @@ useEffect(() => {
                 <button onClick={handleMaxClick} className="text-[#eda921] ml-[10px] font-bold mt-[3px]">MAX</button>
                 <div className="w-full flex flex-col items-center mb-[15px] mt-[10px]">
                   {Number(allowance) >= Number(value) ? (
-                     <button onClick={Donate} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Contribute</button>
+                     <button onClick={Donate} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px] glossy_cta">Contribute</button>
                   ) : verifyAddress(address) ? (
-                    <button onClick={handleApproveOpen} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]">Approve</button>
+                    <button onClick={handleApproveOpen} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px] glossy_cta">Approve</button>
                   ):  (
                     ""
                   )}

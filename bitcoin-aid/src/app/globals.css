@@ -226,6 +226,41 @@ body{
   background: #26251f35; /* Cor de fundo do card */
 }
 
+.glossy_cta{
+  position: relative;
+  overflow: hidden;
+  background: #d79920;
+}
+
+.glossy_claim{
+  position: relative;
+  overflow: hidden;
+  background: #448301;
+}
+
+.glossy_claim::before{
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.2) 25%, transparent 50%, rgba(255, 255, 255, 0.2) 75%);
+  background-size: 200% 100%;
+  animation: shine 2s infinite;
+}
+.glossy_cta::before{
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.2) 25%, transparent 50%, rgba(255, 255, 255, 0.2) 75%);
+  background-size: 200% 100%;
+  animation: shine 2s infinite;
+}
+
 .glossy::before {
   content: '';
   position: absolute;

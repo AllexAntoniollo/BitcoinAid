@@ -3,6 +3,7 @@ import {ethers} from "ethers"
 import { useEffect } from "react";
 import { useState } from "react";
 import { useWallet } from "@/services/walletContext";
+import { SiPolygon } from "react-icons/si";
 import Slider from "react-slick";
 import Error from "@/componentes/erro";
 import Alert from "@/componentes/alert";
@@ -184,7 +185,7 @@ const SimpleSlider = () => {
           <p className="font-Agency mx-auto text-[25px] mt-[10px]">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."}</p>
           <button
             onClick={buyNft}
-            className="mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px]"
+            className=" hover:bg-[#a47618] mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px] glossy_cta"
           >
             Buy Nft
           </button>
@@ -199,7 +200,7 @@ const SimpleSlider = () => {
             <div className="w-full flex justify-center">
               <button
                 onClick={openAddNft}
-                className="bg-[#d79920] w-[200px] p-[10px] rounded-full mb-[20px]"
+                className="bg-[#d79920] w-[200px] p-[10px] rounded-full mb-[20px] glossy_cta hover:bg-[#a47618]"
               >
                 <p className="font-Agency text-[24px]">Add NFT +</p>
               </button>
@@ -211,7 +212,7 @@ const SimpleSlider = () => {
               Claim NFT's Rewards
             </p>
             <div className="w-full flex justify-center">
-              <button className="bg-[#3a6e01] w-[200px] p-[10px] rounded-full mb-[20px]">
+              <button className="bg-[#3a6e01] w-[200px] p-[10px] rounded-full mb-[20px] glossy_claim hover:bg-[#274c00]">
                 <p className="font-Agency text-[24px]">Claim</p>
               </button>
             </div>
@@ -271,7 +272,7 @@ const SimpleSlider = () => {
                   ) : item.user ? (
                     <div key={itemIndex} className="mr-[10px]">
                     
-                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d">
+                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
@@ -308,7 +309,6 @@ const SimpleSlider = () => {
                   )
                 ))}
               </Slider>
-              <p className="font-Agency ml-[100px] text-[20px]">** Your nfts are blinking in the queue</p>
             </div> 
             ) : null
         })}
