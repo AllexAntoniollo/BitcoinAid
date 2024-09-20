@@ -109,6 +109,49 @@ body{
   animation: piscar 2s infinite;
 }
 
+
+.nftUserPiscando {
+  background: repeating-linear-gradient(
+    to right,
+    rgb(85, 75, 69),
+    rgb(85, 75, 69) 0.212%,
+    rgb(32, 35, 215) 0.212%,
+    rgb(32, 35, 215) 17.176%,
+    rgb(32, 35, 215) 16.8433%,
+    rgb(32, 35, 215) 33.142%,
+    rgb(32, 35, 215) 33.4747%,
+    rgb(32, 35, 215) 50.106%,
+    rgb(32, 35, 215) 50.106%,
+    rgb(32, 35, 215) 67.07%,
+    rgb(32, 35, 215) 66.7373%,
+    rgb(32, 35, 215) 83.036%,
+    rgb(32, 35, 215) 83.3687%,
+    rgb(32, 35, 215) 100%
+  );
+  animation: piscar 2s infinite;
+}
+
+
+.nftPaidPiscando {
+  background: repeating-linear-gradient(
+    to right,
+    rgb(85, 75, 69),
+    rgb(85, 75, 69) 0.212%,
+    #008510 0.212%,
+    rgb(0, 133, 16) 17.176%,
+    rgb(0, 133, 16) 16.8433%,
+    rgb(0, 133, 16) 33.142%,
+    rgb(0, 133, 16) 33.4747%,
+    rgb(0, 133, 16) 50.106%,
+    rgb(0, 133, 16) 50.106%,
+    rgb(0, 133, 16) 67.07%,
+    rgb(0, 133, 16) 66.7373%,
+    rgb(0, 133, 16) 83.036%,
+    rgb(0, 133, 16) 83.3687%,
+    rgb(0, 133, 16) 100%
+  );
+  animation: piscar 2s infinite;
+}
 @keyframes piscar {
   0% {
     opacity: 1;
@@ -119,35 +162,6 @@ body{
   100% {
     opacity: 1;
   }
-}
-
-
-/* FIREWORKS ANIMATION */
-.firework-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  z-index: 1000;
-}
-
-.firework {
-  position: relative;
-  width: 4px;
-  height: 80px;
-  background-color: transparent;
-  animation: shoot 1s ease-in forwards, explode 0.5s ease-out 1s forwards;
-}
-
-.spark {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  background-color: red;
-  border-radius: 50%;
-  animation: sparkle 1s ease-out 1s forwards;
 }
 
 @keyframes shoot {

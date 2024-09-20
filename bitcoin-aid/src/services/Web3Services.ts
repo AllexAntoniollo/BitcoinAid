@@ -3,11 +3,13 @@ import tokenAbi from "./Token.abi.json";
 import donationAbi from "./Donation.abi.json";
 import queueAbi from "./Queue.abi.json";
 import collectionAbi from "./Collection.abi.json";
+import usdtAbi from "./Usdt.abi.json";
 const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID;
 const TOKEN_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_ADDRESS;
 const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
 const QUEUE_ADDRESS = process.env.NEXT_PUBLIC_QUEUE_ADDRESS;
 const COLLECTION_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ADDRESS;
+const USDT_ADDRESS = process.env.NEXT_PUBLIC_USDT_ADDRESS
 import { nftQueue } from "./types";
 import { promises } from "dns";
 
@@ -188,4 +190,49 @@ export async function nftPrice(batch:number){
 
   const price = await collectionContract.getBatchPrice(batch);
   return price;
+}
+
+export async function approveMint(value:BigInt) {
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const mint = new ethers.Contract(USDT_ADDRESS ? USDT_ADDRESS : "", usdtAbi, signer);
+
+  const tx = await mint.approve(COLLECTION_ADDRESS, value);
+  await tx.wait();
+
+  return true;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export async function usersNft(batch:number, address:string){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const nftUsers = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", collectionAbi, signer);
+
+  const nfts = await nftUsers.getUsersNFTsInSpecificQueue(batch, address);
+  return nfts;
 }

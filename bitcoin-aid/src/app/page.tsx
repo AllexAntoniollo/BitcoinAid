@@ -352,21 +352,36 @@ useEffect(() => {
               </div>
 
               <div className="flex flex-col justify-between m-auto w-[100%] sm:w-[95%] h-[300px] bg-[#434139] rounded-3xl mb-[20px]">
-                <div className="pt-[30px] pl-[8%]">
+                <div className="pt-[30px] flex flex-col items-center justify-center">
                   {address ? (
                     balanceValue !== null ? (
-                      <p className="sm:text-[30px] text-[25px] font-Agency">Wallet Balance: {ethers.formatEther(balanceValue)} <span className="text-[#d79920]">AiD</span></p>
+                      <>
+                      <p className="text-[25px]">Wallet Balance</p>
+                      <span className="font-semibold text-[22px]"> {ethers.formatEther(balanceValue)} AiD</span>
+                      </>
                     ) : (
-                      <p className="sm:text-[30px] text-[25px] font-Agency">Wallet Balance: 00.0000<span className="text-[#d79920]">AiD</span></p>
+                      <>
+                      <p className="text-[25px]">Wallet Balance</p>
+                      <p className="text-[22px] font-semibold">00.0000 AiD</p>
+                      </>
                     ) 
                   ) : (
-                    <p className="sm:text-[30px] text-[25px]  font-Agency">Wallet Balance: ------</p>
+                    <>
+                    <p className="text-[25px]">Wallet Balance</p>
+                    <p className="text-[22px] font-semibold">---- AiD</p>
+                    </>
                   )}
-                  <p className="sm:text-[25px] text-[20px] font-Agency">$235.62</p>
+                  <p className="text-[16px] text-[#eda921]">$235.62</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
-                    <p className="sm:text-[30px] text-[25px] font-Agency mt-[20px]">Total Contributed: {Number(userBalanceValue)/1000000} <span className="text-[#d79920]">$</span></p>
+                    <>
+                    <p className="text-[25px] mt-[14px]">Total Contributed</p>
+                    <span className="font-semibold text-[22px]">{Number(userBalanceValue)/1000000} $</span>
+                    </>
                   ):(
-                    <p className="sm:text-[30px] text-[25px] font-Agency mt-[20px]">Total Contributed: ---- <span className="text-[#d79920]">AiD</span></p>
+                    <>
+                    <p className="text-[22px] mt-[20px]">Total Contributed</p>
+                    <p className="text-[22px] font-semibold">---- <span className="">AiD</span></p>
+                    </>
                   )}
                 </div>
                 <div className="flex justify-center items-end pb-[20px]">
@@ -386,7 +401,7 @@ useEffect(() => {
 
               <div className="flex justify-between flex-col items-center mb-[20px] m-auto w-[100%] sm:w-[95%] h-[300px] bg-[#434139] rounded-3xl">
                 <div className="pt-[30px]">
-                  <p className="font-Agency text-[30px]">CLAIMABLE REWARDS</p>
+                  <p className="text-[25px] font-semibold">CLAIMABLE REWARDS</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
                      <p className="font-Agency text-center text-[45px] mt-[15px]">{Number(userBalanceValue)/1000000}<span className="text-[#d79920]">$</span></p>
                   ) : (

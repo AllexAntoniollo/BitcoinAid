@@ -1,5 +1,6 @@
 "use client";
 import {ethers} from "ethers"
+import { TbLockAccess } from "react-icons/tb";
 import { useEffect } from "react";
 import { useState } from "react";
 import { useWallet } from "@/services/walletContext";
@@ -15,6 +16,7 @@ import {
   addQueue,
   mintNft,
   nftPrice,
+  approveMint,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
 import Image from "next/image";
@@ -29,6 +31,8 @@ const SimpleSlider = () => {
   const [error, setError] = useState("");
   const [alert, setAlert] = useState("");
   const {address, setAddress} = useWallet();
+  const [approveToMint, setApproveToMint] = useState<boolean>(false);
+  const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false)
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Converte o valor para um número, se possível
@@ -37,10 +41,42 @@ const SimpleSlider = () => {
     setInputValue(numericValue);
   };
 
+  async function approveToMintNft(value:number){
+    try{
+      setLoading(true);
+      const priceInWei = BigInt(value) * BigInt(Math.pow(10,18));
+      const result = await approveMint(priceInWei);
+      if(result){
+        setLoading(false);
+        setAlert("Your NFT is now available in your wallet");
+        setApproveToMint(false);
+      }
+    }catch(err){
+      setLoading(false);
+      setError("Failed to buy nft")
+    }
+  }
+
+  const doApproveMint = () => {
+    const priceInWei:number = Number(nftCurrentPrice) * Number(Math.pow(10, 18));
+    console.log(priceInWei);
+    if(address){
+      approveToMintNft(priceInWei);
+    }else{
+      setError("You need connect your wallet");
+    }
+  }
+
   const handleSubmit = () => {
     addQueue(Number(inputValue));
   };
 
+  const goApproveMint = () => {
+    setApproveToMintOpen(true);
+  }
+const handleApproveMintOpen = () => {
+  setApproveToMintOpen(prevState => !prevState);
+}
   const buyNft = async () => {
     try{
       setLoading(true);
@@ -168,13 +204,13 @@ const SimpleSlider = () => {
     </div>
   )}
 
-      <div className=" w-full sm:max-w-[90%] max-w-[98%]  m-auto p-4">
+      <div className=" w-full sm:max-w-[90%] max-w-[98%] m-auto p-4">
         <p className="mt-[40px] mb-[40px] leading-tight font-Agency text-[50px] sm:text-[80px] font-normal w-full">
           Bitcoin AiD Protocol - NFT Payment Queue
         </p>
         <div className=" mx-auto lg:w-[35%] w-[90%] bg-[#26251f35] rounded-3xl mb-[10px] flex flex-col py-[30px] shadow-lg glossy">
           <div className="glossy-content flex items-center justify-center flex-col">
-          <p className="font-Agency mx-auto text-[40px]">{currentBatch ? `Buy NFT - Lote #${currentBatch}` : 'Loading...'}</p>
+          <p className=" mx-auto text-[30px] mb-[8px]">{currentBatch ? `Buy NFT - Lote #${currentBatch}` : 'Loading...'}</p>
           <Image
             src="/images/NFTSATOSHI.png"
             alt="NFT"
@@ -182,19 +218,29 @@ const SimpleSlider = () => {
             height={1000}
             className="mx-auto max-w-[60%] max-h-[55%]"
           ></Image>
-          <p className="font-Agency mx-auto text-[25px] mt-[10px]">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."}</p>
-          <button
+          <p className="mx-auto text-[20px] mt-[10px] font-semibold">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."}</p>
+          {approveToMint ?(
+              <button
+              onClick={goApproveMint}
+              className=" hover:bg-[#a47618] mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px] glossy_cta"
+              >
+                Buy Nft
+              </button>
+          ):(
+            <button
             onClick={buyNft}
             className=" hover:bg-[#a47618] mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px] glossy_cta"
-          >
+            >
             Buy Nft
-          </button>
+            </button>
+          )}
+
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row md:justify-between md:gap-6 mb-[30px] mt-[25px]">
           <div className="mx-auto mr-[30px] md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4  border-2 border-[#d79920]">
-            <p className="font-Agency text-center text-[25px] mt-[20px]">
+            <p className=" text-center text-[24px] mt-[20px]">
               Add your NFT's to Queue
             </p>
             <div className="w-full flex justify-center">
@@ -202,23 +248,35 @@ const SimpleSlider = () => {
                 onClick={openAddNft}
                 className="bg-[#d79920] w-[200px] p-[10px] rounded-full mb-[20px] glossy_cta hover:bg-[#a47618]"
               >
-                <p className="font-Agency text-[24px]">Add NFT +</p>
+                <p className="text-[20px] font-semibold">Add NFT +</p>
               </button>
             </div>
           </div>
 
           <div className="mx-auto md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4 border-2 border-[#3a6e01]">
-            <p className="font-Agency text-center text-[25px] mt-[20px]">
+            <p className="text-center text-[24px] mt-[20px]">
               Claim NFT's Rewards
             </p>
             <div className="w-full flex justify-center">
               <button className="bg-[#3a6e01] w-[200px] p-[10px] rounded-full mb-[20px] glossy_claim hover:bg-[#274c00]">
-                <p className="font-Agency text-[24px]">Claim</p>
+                <p className="font-semibold text-[20px]">Claim</p>
               </button>
             </div>
           </div>
         </div>
-        <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto slider-container p-2 mb-[100px] mt-[100px]">
+
+        <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto slider-container p-2 mb-[100px] mt-[50px]">
+        <div className="w-[100%] flex flex-row items-center mb-[10px]">
+          <div className="w-[10px] h-[10px] bg-yellow-500 ml-[15px]">
+          </div>
+          <p className="ml-[5px]">All Nfts</p>
+          <div className=" bg-[#008510] w-[10px] h-[10px]  ml-[15px]">
+          </div>
+          <p className="ml-[5px]">Next paid nfts</p>
+          <div className="bg-blue-600 w-[10px] h-[10px] ml-[15px]">
+          </div>
+          <p className="ml-[5px]">Your Nft's</p>
+        </div>
           {queueData.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
             return hasUserData ? (
@@ -237,7 +295,7 @@ const SimpleSlider = () => {
                   item.user && item.user.toLowerCase() === address ?(
                   <div key={itemIndex} className="mr-[10px]">
                     
-                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando ">
+                    <div className="mt-[50px] ml-[50px] nftUserPiscando p-4 h-[200px] max-w-[100%] w-[260px] caixa3d transform transition-transform">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
@@ -252,10 +310,7 @@ const SimpleSlider = () => {
                             : "N/A"}
                         </span>
                       </p>
-                      <p>Prox: {item.next ? item.next.toString() : "N/A"}</p>
-                      <p>
-                        Anterior: {item.prev ? item.prev.toString() : "N/A"}
-                      </p>
+
                       <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
                       <p>
                         Batch Level:{" "}
@@ -266,13 +321,15 @@ const SimpleSlider = () => {
                         {item.dollarsClaimed
                           ? item.dollarsClaimed.toString()
                           : "N/A"}
+                      </p>
+                      <p>
+                      Will Received: {Number(nftCurrentPrice)*3}$
                       </p>
                     </div>
                   </div>
                   ) : item.user ? (
                     <div key={itemIndex} className="mr-[10px]">
-                    
-                    <div className="mt-[50px] ml-[50px] bg-[#d79920] p-4 transform transition-transform duration-300 h-[200px] max-w-[100%] w-[260px] hover:scale-105 hover:rotate-1 hover:shadow-lg hover:bg-[#d79a20f2] caixa3d nftPiscando">
+                    <div className="nftPiscando mt-[50px] ml-[50px] p-4 transform transition-transform h-[200px] max-w-[100%] w-[260px] caixa3d">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
@@ -287,20 +344,10 @@ const SimpleSlider = () => {
                             : "N/A"}
                         </span>
                       </p>
-                      <p>Prox: {item.next ? item.next.toString() : "N/A"}</p>
-                      <p>
-                        Anterior: {item.prev ? item.prev.toString() : "N/A"}
-                      </p>
                       <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
                       <p>
                         Batch Level:{" "}
                         {item.batchLevel ? item.batchLevel.toString() : "N/A"}
-                      </p>
-                      <p>
-                        Dollars Claimed:{" "}
-                        {item.dollarsClaimed
-                          ? item.dollarsClaimed.toString()
-                          : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -347,6 +394,26 @@ const SimpleSlider = () => {
                 Go Queue
               </button>
             </div>
+          </div>
+        </div>
+      ) : (
+        ""
+      )}
+
+      {approveToMintOpen ?(
+       <div onClick={handleApproveMintOpen} className="fixed inset-0 flex items-center justify-center z-50">
+       <div className="fixed inset-0 bg-black opacity-80" ></div>
+         <div className="relative items-center justify-center flex bg-[#201f1b] border-2 border-[#eda921] p-6 rounded-lg shadow-lg w-[80%] max-w-lg z-10">
+             <div className="w-[100%] flex items-center justify-center flex-col">                
+               <TbLockAccess className="border-2 text-[80px] rounded-full p-[20px] border-white"/> 
+               <p className="font-Agency text-[35px] mt-[10px]">Unlock USDT</p>
+               <p className="text-center text-[18px] mt-[6px]">We need your permission to move {nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."} USDT on your behalf</p>
+               {address?(
+                 <button onClick={doApproveMint} className=" font-semibold rounded-3xl bg-[#eda921] px-[30px] py-[12px] my-[20px]">Approve USDT</button>
+               ):(
+                ""
+               )}
+              </div>
           </div>
         </div>
       ) : (

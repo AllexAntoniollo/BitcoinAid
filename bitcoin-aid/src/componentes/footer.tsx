@@ -29,9 +29,9 @@ export default function Footer(){
     </div>
 
     <div className="w-[25%]">
-    <Link href="/" className="flex flex-col items-center">
+    <Link href="/dashboard" className="flex flex-col items-center">
       <RiNftFill className=" text-[18px] md:text-[20px]"/>
-      <p className="">Profile</p>
+      <p className={isActive('/dashboard') ? 'text-yellow-500' : 'text-white'}>Profile</p>
     </Link>
     </div>
 

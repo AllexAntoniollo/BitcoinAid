@@ -24,6 +24,7 @@ export default function RootLayout({
         <link rel="icon" href="/images/LogoBTCA-PNG.png" />
       </head>
       <body className="bg-gradient-to-t to-[#201f1b] from-[#000000]">
+        <Image alt="bg" src={'/images/World.png'} width={1000} height={1000} className="absolute z-[-1] opacity-[20%]"></Image>
         <WalletProvider> {/* Envolva o conteúdo com o WalletProvider */}
           <Header />
           <main className={franklin.className}>{children}</main>
