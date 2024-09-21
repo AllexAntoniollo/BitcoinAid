@@ -10,6 +10,7 @@ import Error from "@/componentes/erro";
 import Alert from "@/componentes/alert";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { FaLongArrowAltDown } from "react-icons/fa";
 import {
   getQueue,
   getCurrentBatch,
@@ -24,6 +25,7 @@ import Image from "next/image";
 const SimpleSlider = () => {
   const [loading, setLoading] = useState(false);
   const [queueData, setQueueData] = useState<nftQueue[][]>([]);
+  const [queuePay, setQueuePay] = useState<nftQueue[]>();
   const [currentBatch, setCurrentBatch] = useState<number>(0);
   const [addNftOpen, setNftAddOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<number | "">("");
@@ -32,7 +34,7 @@ const SimpleSlider = () => {
   const [alert, setAlert] = useState("");
   const {address, setAddress} = useWallet();
   const [approveToMint, setApproveToMint] = useState<boolean>(false);
-  const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false)
+  const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Converte o valor para um número, se possível
@@ -40,6 +42,7 @@ const SimpleSlider = () => {
     const numericValue = value === "" ? "" : Number(value);
     setInputValue(numericValue);
   };
+
 
   async function approveToMintNft(value:number){
     try{
@@ -122,6 +125,7 @@ const handleApproveMintOpen = () => {
       for (let i = 1; i <= result; i++) {
         promises.push(getQueue(i));
       }
+
       const results = await Promise.all(promises);
       setQueueData(results);
       console.log("resultado ", results);
@@ -139,60 +143,65 @@ const handleApproveMintOpen = () => {
     }
   },[currentBatch])
 
-  const settings = (dataSetLength: number) => ({
-    dots: true,
-    infinite: false, // Desativa o efeito "infinite" se houver menos de 3 itens
-    speed: 500,
-    slidesToShow: 3, // Mostra no máximo 4 slides
-    slidesToScroll: Math.min(3, dataSetLength), // Rola no máximo 4 slides
-    adaptiveHeight: true, // Ajusta a altura do slider com base no conteúdo
-    arrows: dataSetLength > 3, // Mostra as setas de navegação apenas se houver mais de 3 itens
-    swipe: dataSetLength > 3, // Permite o swipe apenas se houver mais de 3 itens
-    touchMove: dataSetLength > 3, // Permite o movimento com toque apenas se houver mais de 3 itens
-    draggable: dataSetLength > 3,
-
-    responsive: [
-      {
-        breakpoint: 1300, // Largura da tela para o breakpoint
-        settings: {
-          slidesToShow: 2,
-          slidesToScroll: 2,
-          infinite: false,
-          dots: true,
-          arrows: dataSetLength > 2, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: dataSetLength > 2, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: dataSetLength > 2, // Permite o movimento com toque apenas se houver mais de 3 itens
-          draggable: dataSetLength > 2,
+  const settings = (dataSetLength: number) => {
+    const maxSlidesToShow = 4;
+    return{
+      dots: true,
+      infinite: dataSetLength > maxSlidesToShow, // Desativa o efeito "infinite" se houver menos de 3 itens
+      speed: 500,
+      slidesToShow: 4, // Mostra no máximo 4 slides
+      slidesToScroll: 1, // Rola no máximo 4 slides
+      adaptiveHeight: true, // Ajusta a altura do slider com base no conteúdo
+      arrows: dataSetLength > 4, // Mostra as setas de navegação apenas se houver mais de 3 itens
+      swipe: true, // Permite o swipe apenas se houver mais de 3 itens
+      touchMove: true, // Permite o movimento com toque apenas se houver mais de 3 itens
+      draggable: dataSetLength > 4,
+  
+      responsive: [
+        {
+          breakpoint: 1300, // Largura da tela para o breakpoint
+          settings: {
+            slidesToShow: 2.7,
+            slidesToScroll: 1,
+            infinite: dataSetLength > maxSlidesToShow-2,
+            dots: true,
+            arrows: dataSetLength > 2, // Mostra as setas de navegação apenas se houver mais de 3 itens
+            swipe: true, // Permite o swipe apenas se houver mais de 3 itens
+            touchMove: true, // Permite o movimento com toque apenas se houver mais de 3 itens
+            draggable: dataSetLength > 2,
+          },
         },
-      },
-      {
+        {
+          breakpoint: 1024,
+          settings: {
+            slidesToShow: 3,
+            slidesToScroll: 1,
+            infinite: dataSetLength > maxSlidesToShow-1,
+            dots: true,
+            arrows: dataSetLength > 3, // Mostra as setas de navegação apenas se houver mais de 3 itens
+            swipe: true, // Permite o swipe apenas se houver mais de 3 itens
+            touchMove: true, // Permite o movimento com toque apenas se houver mais de 3 itens
+            draggable: dataSetLength > 3,
+          },
+        },
+        {
         breakpoint: 950,
         settings: {
-          slidesToShow: 2,
-          slidesToScroll: 2,
-          infinite: false,
-          dots: true,
-          arrows: dataSetLength > 2, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: dataSetLength > 2, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: dataSetLength > 2, // Permite o movimento com toque apenas se houver mais de 3 itens
+          dots: false,
+          slidesToShow: 2.2,
+          slidesToScroll: 1,
+          infinite: dataSetLength > maxSlidesToShow-2,
+          arrows: false, // Mostra as setas de navegação apenas se houver mais de 3 itens
+          swipe: true, // Permite o swipe apenas se houver mais de 3 itens
+          touchMove: true, // Permite o movimento com toque apenas se houver mais de 3 itens
           draggable: dataSetLength > 2,
         },
       },
-      {
-        breakpoint: 890, // Largura da tela para o breakpoint
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          infinite: false,
-          dots: true,
-          arrows: dataSetLength > 1, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: dataSetLength > 1, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: dataSetLength > 1, // Permite o movimento com toque apenas se houver mais de 3 itens
-          draggable: dataSetLength > 1,
-        },
-      },
-    ],
-  });
+      ],
+    };
+  };
+    
+   
   return (
     <>
     
@@ -238,8 +247,8 @@ const handleApproveMintOpen = () => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:justify-between md:gap-6 mb-[30px] mt-[25px]">
-          <div className="mx-auto mr-[30px] md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4  border-2 border-[#d79920]">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:gap-6 mb-[30px] mt-[25px]">
+          <div className="mx-auto mr-[30px] lg:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4  border-2 border-[#d79920]">
             <p className=" text-center text-[24px] mt-[20px]">
               Add your NFT's to Queue
             </p>
@@ -253,7 +262,7 @@ const handleApproveMintOpen = () => {
             </div>
           </div>
 
-          <div className="mx-auto md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4 border-2 border-[#3a6e01]">
+          <div className="mx-auto lg:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4 border-2 border-[#3a6e01]">
             <p className="text-center text-[24px] mt-[20px]">
               Claim NFT's Rewards
             </p>
@@ -289,13 +298,20 @@ const handleApproveMintOpen = () => {
               </h2>
               <Slider 
                 {...settings(dataSet.length)}
-                className="w-full sm:max-w-[90%] max-w-[90%] mx-auto h-full mt-[10px]"
-              >
+                className="w-full sm:max-w-[90%] max-w-[90%] lg:ml-[30px] ml-[10px] h-full mt-[10px] md:text-[16px] text-[12px]">
                 {dataSet.map((item, itemIndex) => (
                   item.user && item.user.toLowerCase() === address ?(
-                  <div key={itemIndex} className="mr-[10px]">
-                    
-                    <div className="mt-[50px] ml-[50px] nftUserPiscando p-4 h-[200px] max-w-[100%] w-[260px] caixa3d transform transition-transform">
+                  <div key={itemIndex} className="">
+                    {itemIndex+1 === 1 ?(
+                      <>
+                      <div className="absolute w-[30px] h-[30px] top-[0px] left-[0px] z-999">
+                      <FaLongArrowAltDown className="text-[20px]"/>
+                      </div>
+                      </>
+                    ):(
+                      ""
+                    )}
+                    <div className="mt-[50px] nftUserPiscando p-2 lg:p-4 caixa3d transform transition-transform">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
@@ -317,19 +333,22 @@ const handleApproveMintOpen = () => {
                         {item.batchLevel ? item.batchLevel.toString() : "N/A"}
                       </p>
                       <p>
-                        Dollars Claimed:{" "}
-                        {item.dollarsClaimed
-                          ? item.dollarsClaimed.toString()
-                          : "N/A"}
-                      </p>
-                      <p>
                       Will Received: {Number(nftCurrentPrice)*3}$
                       </p>
                     </div>
                   </div>
                   ) : item.user ? (
-                    <div key={itemIndex} className="mr-[10px]">
-                    <div className="nftPiscando mt-[50px] ml-[50px] p-4 transform transition-transform h-[200px] max-w-[100%] w-[260px] caixa3d">
+                    <div key={itemIndex} className="relative">
+                       {itemIndex+1 === 1 ?(
+                      <>
+                      <div className="absolute w-[30px] h-[30px] top-[10px] left-[-15px] z-999 animate-bounce">
+                      <FaLongArrowAltDown className="text-[30px]"/>
+                      </div>
+                      </>
+                    ):(
+                      ""
+                    )}
+                    <div className="nftPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
