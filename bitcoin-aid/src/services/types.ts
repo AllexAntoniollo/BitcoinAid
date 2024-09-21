@@ -5,4 +5,12 @@ export type nftQueue = {
     index:bigint,
     batchLevel:bigint,
     dollarsClaimed:bigint,
+    nextPaied: boolean,
+}
+
+export type blockData = {
+    user:string,
+    index:bigint,
+    batchLevel:bigint,
+    nextPaied: boolean,
 }

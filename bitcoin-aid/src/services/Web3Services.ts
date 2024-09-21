@@ -204,7 +204,38 @@ export async function approveMint(value:BigInt) {
   return true;
 }
 
+export async function nextToPaid(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
 
+  const getNextFour = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, provider);
+
+  const nextFour = await getNextFour.getNextUsersToPaid();
+  return nextFour;
+}
+
+
+export async function totalNfts(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
+
+  const getNextFour = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, provider);
+
+  const total = await getNextFour.totalNFTsInQueue();
+  return total;
+}
+
+export async function balanceFree(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
+
+  const getNextFour = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, provider);
+
+  try{
+    const balance = await getNextFour.balanceFree();
+    return balance;
+  }catch(err){
+    return false;
+  }
+
+}
 
 
 

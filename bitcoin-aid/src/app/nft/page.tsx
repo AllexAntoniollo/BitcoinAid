@@ -10,7 +10,6 @@ import Error from "@/componentes/erro";
 import Alert from "@/componentes/alert";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { FaLongArrowAltDown } from "react-icons/fa";
 import {
   getQueue,
   getCurrentBatch,
@@ -18,14 +17,22 @@ import {
   mintNft,
   nftPrice,
   approveMint,
+  nextToPaid,
+  balanceFree,
+  totalNfts,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
+import { blockData } from "@/services/types";
 import Image from "next/image";
+import { BlockList } from "net";
 
 const SimpleSlider = () => {
   const [loading, setLoading] = useState(false);
   const [queueData, setQueueData] = useState<nftQueue[][]>([]);
-  const [queuePay, setQueuePay] = useState<nftQueue[]>();
+  const [blockData, setBlockData] = useState<blockData[][]>([]);
+  const [nextPaid, setNextPaid] = useState<nftQueue[]>();
+  const [balance, setBalance] = useState<number>();
+  const [valuesNextFour, setValuesNextFour]= useState<number[]>([]);
   const [currentBatch, setCurrentBatch] = useState<number>(0);
   const [addNftOpen, setNftAddOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<number | "">("");
@@ -42,6 +49,74 @@ const SimpleSlider = () => {
     const numericValue = value === "" ? "" : Number(value);
     setInputValue(numericValue);
   };
+
+  async function nextFour(){
+    const total = await totalNfts();
+    if(total >= 4){
+      const result = await nextToPaid();
+      let getBalance = await balanceFree();
+    let balance = (parseInt(getBalance) / Math.pow(10, 18));
+    console.log("Tem %d aid disponivel pras nft", balance);
+
+    let valueNextFour = [];
+    let nextPaidArray = [];
+    setBalance(balance);
+    for(let i = 0; i < Math.min(result.length, 4); i++){
+      let start = 10;
+      const lote = result[i].batchLevel;
+      for(let j = 1; j < lote; j++){
+        start = start*2;
+      }
+      const calculatedValue = start*3;
+      valueNextFour.push(calculatedValue);
+    }
+    for(let k = 0; k<4; k++){
+      balance -= valueNextFour[k]; 
+      console.log("balance atual",balance);
+      if(balance > 0){
+        nextPaidArray.push(result[k]);
+      }
+    }
+    setNextPaid(nextPaidArray);
+    }else{
+      let dontNextPaied = undefined;
+      setNextPaid(dontNextPaied);
+    }
+  }
+
+  async function verificaPaied() {
+    const flattenedArray: blockData[][] = [];
+    for (let i = 0; i < queueData.length; i++) {
+      // Inicializa o array para cada `i`
+      flattenedArray[i] = [];
+      
+      for (let j = 0; j < queueData[i].length; j++) {
+        const item = queueData[i][j];
+        const isPaied = nextPaid ? nextPaid.some(next => next.index === item.index) : false;
+        // Atribua um novo objeto no índice apropriado
+        flattenedArray[i][j] = {
+          user: item.user,
+          index: item.index,
+          batchLevel: item.batchLevel,
+          nextPaied: isPaied,
+        };
+      }
+    }
+  
+    console.log('Atualizando blockData:', flattenedArray);
+    setBlockData(flattenedArray);
+  }
+  
+
+function youWillRecieved(value:number){
+    let start = 10;
+    let recieved;
+    for(let j = 1; j < value; j++){
+      start = start*2;
+    }
+    const calculatedValue = start*3;
+    return calculatedValue;
+  }
 
 
   async function approveToMintNft(value:number){
@@ -134,8 +209,20 @@ const handleApproveMintOpen = () => {
     }
   };
   useEffect(() => {
-    fetchQueue();
+    const fetchData = async () => {
+      await fetchQueue();
+      await nextFour();
+    };
+  
+    fetchData();
   }, []);
+  
+  useEffect(() => {
+    if (queueData.length > 0) {
+      verificaPaied();
+    }
+  }, [queueData, nextPaid]);
+  
 
   useEffect(() => {
     if(currentBatch){
@@ -144,62 +231,58 @@ const handleApproveMintOpen = () => {
   },[currentBatch])
 
   const settings = (dataSetLength: number) => {
+    const handleBeforeChange = (next:number) => {
+      // Previne ir além do número total de slides
+      if (next >= dataSetLength) {
+        return false; // Impede a transição se o próximo slide ultrapassar o limite
+      }
+
+    };
     const maxSlidesToShow = 4;
-    return{
+    return {
       dots: true,
-      infinite: dataSetLength > maxSlidesToShow, // Desativa o efeito "infinite" se houver menos de 3 itens
+      infinite: false, // Desativa o loop infinito
       speed: 500,
-      slidesToShow: 4, // Mostra no máximo 4 slides
-      slidesToScroll: 1, // Rola no máximo 4 slides
-      adaptiveHeight: true, // Ajusta a altura do slider com base no conteúdo
-      arrows: dataSetLength > 4, // Mostra as setas de navegação apenas se houver mais de 3 itens
-      swipe: true, // Permite o swipe apenas se houver mais de 3 itens
-      touchMove: true, // Permite o movimento com toque apenas se houver mais de 3 itens
-      draggable: dataSetLength > 4,
+      slidesToShow: Math.min(maxSlidesToShow, dataSetLength), // Mostra no máximo 4 slides ou menos
+      slidesToScroll: 1, // Desliza no máximo 1 slide por vez
+      adaptiveHeight: true,
+      arrows: dataSetLength > maxSlidesToShow, // Exibe setas se houver mais que 4 slides
+      swipe: true,
+      touchMove: true,
+      draggable: dataSetLength > 1,
+      beforeChange: handleBeforeChange, // Permite arrastar se houver mais de 1 slide
   
       responsive: [
         {
-          breakpoint: 1300, // Largura da tela para o breakpoint
+          breakpoint: 1300,
           settings: {
-            slidesToShow: 2.7,
+            slidesToShow: Math.min(3, dataSetLength),
             slidesToScroll: 1,
-            infinite: dataSetLength > maxSlidesToShow-2,
-            dots: true,
-            arrows: dataSetLength > 2, // Mostra as setas de navegação apenas se houver mais de 3 itens
-            swipe: true, // Permite o swipe apenas se houver mais de 3 itens
-            touchMove: true, // Permite o movimento com toque apenas se houver mais de 3 itens
-            draggable: dataSetLength > 2,
+            beforeChange: handleBeforeChange,
           },
         },
         {
           breakpoint: 1024,
           settings: {
-            slidesToShow: 3,
+            slidesToShow: Math.min(3, dataSetLength),
             slidesToScroll: 1,
-            infinite: dataSetLength > maxSlidesToShow-1,
-            dots: true,
-            arrows: dataSetLength > 3, // Mostra as setas de navegação apenas se houver mais de 3 itens
-            swipe: true, // Permite o swipe apenas se houver mais de 3 itens
-            touchMove: true, // Permite o movimento com toque apenas se houver mais de 3 itens
-            draggable: dataSetLength > 3,
+            beforeChange: handleBeforeChange,
           },
         },
         {
-        breakpoint: 950,
-        settings: {
-          dots: false,
-          slidesToShow: 2.2,
-          slidesToScroll: 1,
-          infinite: dataSetLength > maxSlidesToShow-2,
-          arrows: false, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: true, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: true, // Permite o movimento com toque apenas se houver mais de 3 itens
-          draggable: dataSetLength > 2,
+          breakpoint: 950,
+          settings: {
+            slidesToShow: 2,
+            slidesToScroll: 1,
+            dots: false,
+            arrows: false,
+            beforeChange: handleBeforeChange,
+          },
         },
-      },
       ],
     };
   };
+  
     
    
   return (
@@ -213,7 +296,7 @@ const handleApproveMintOpen = () => {
     </div>
   )}
 
-      <div className=" w-full sm:max-w-[90%] max-w-[98%] m-auto p-4">
+      <div className=" w-full sm:max-w-[90%] max-w-[98%] m-auto sm:p-4">
         <p className="mt-[40px] mb-[40px] leading-tight font-Agency text-[50px] sm:text-[80px] font-normal w-full">
           Bitcoin AiD Protocol - NFT Payment Queue
         </p>
@@ -286,7 +369,7 @@ const handleApproveMintOpen = () => {
           </div>
           <p className="ml-[5px]">Your Nft's</p>
         </div>
-          {queueData.map((dataSet, index) => {
+          {blockData.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
             return hasUserData ? (
 
@@ -298,21 +381,13 @@ const handleApproveMintOpen = () => {
               </h2>
               <Slider 
                 {...settings(dataSet.length)}
-                className="w-full sm:max-w-[90%] max-w-[90%] lg:ml-[30px] ml-[10px] h-full mt-[10px] md:text-[16px] text-[12px]">
+                className="w-full sm:max-w-[90%] max-w-[95%] lg:ml-[30px] ml-[10px] h-full mt-[10px] md:text-[16px] sm:text-[12px] text-[10px]">
                 {dataSet.map((item, itemIndex) => (
-                  item.user && item.user.toLowerCase() === address ?(
+                  item.user && item.user.toLowerCase() === address && item.nextPaied === false ?(
                   <div key={itemIndex} className="">
-                    {itemIndex+1 === 1 ?(
-                      <>
-                      <div className="absolute w-[30px] h-[30px] top-[0px] left-[0px] z-999">
-                      <FaLongArrowAltDown className="text-[20px]"/>
-                      </div>
-                      </>
-                    ):(
-                      ""
-                    )}
                     <div className="mt-[50px] nftUserPiscando p-2 lg:p-4 caixa3d transform transition-transform">
                       <div className="">
+                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
                       <p>
@@ -326,28 +401,44 @@ const handleApproveMintOpen = () => {
                             : "N/A"}
                         </span>
                       </p>
-
                       <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
                       <p>
                         Batch Level:{" "}
                         {item.batchLevel ? item.batchLevel.toString() : "N/A"}
                       </p>
                       <p>
-                      Will Received: {Number(nftCurrentPrice)*3}$
+                      Will Received: {youWillRecieved(Number(item.batchLevel))}$
                       </p>
                     </div>
                   </div>
-                  ) : item.user ? (
+                  ) : item.user && item.nextPaied === true ? (
                     <div key={itemIndex} className="relative">
-                       {itemIndex+1 === 1 ?(
-                      <>
-                      <div className="absolute w-[30px] h-[30px] top-[10px] left-[-15px] z-999 animate-bounce">
-                      <FaLongArrowAltDown className="text-[30px]"/>
+                    <div className="nftPaidPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d">
+                      <div className="">
+                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
+                        <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
-                      </>
-                    ):(
-                      ""
-                    )}
+                      
+                      <p>
+                        User:{" "}
+                        <span>
+                          {" "}
+                          {item.user
+                            ? `${item.user.slice(0, 6)}...${item.user.slice(
+                                -4
+                              )}`
+                            : "N/A"}
+                        </span>
+                      </p>
+                      <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
+                      <p>
+                        Batch Level:{" "}
+                        {item.batchLevel ? item.batchLevel.toString() : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  ): item.user && item.nextPaied == false ? (
+                    <div key={itemIndex} className="relative">
                     <div className="nftPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d">
                       <div className="">
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
@@ -441,6 +532,8 @@ const handleApproveMintOpen = () => {
     </>
   );
 };
+
+
 
 export default SimpleSlider;
 

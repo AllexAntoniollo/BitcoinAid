@@ -123,19 +123,19 @@ body{
 
   .caixa3d {
     position: relative; /* Necessário para que os pseudoelementos sejam posicionados corretamente */
-    width: 143px; /* Largura da caixa principal */
-    height: 112px; /* Altura da caixa principal */
+    width: 136px; /* Largura da caixa principal */
+    height: 106px; /* Altura da caixa principal */
     background-color: #2d3748; /* Cor da frente da caixa */
-    perspective: 448px; /* Dá uma perspectiva 3D mais realista */
+    perspective: 425px; /* Dá uma perspectiva 3D mais realista */
   }
 
   .caixa3d::before {
     content: "";
-    width: 143px; /* Largura do topo, igual à caixa principal */
-    height: calc(0.192 * 105px); /* Altura calculada em relação à altura da caixa */
+    width: 136px; /* Largura do topo, igual à caixa principal */
+    height: calc(0.192 * 100px); /* Altura calculada em relação à altura da caixa */
     position: absolute;
-    top: calc(-0.192 * 105px); /* Move o topo inclinado para cima da caixa */
-    right: -24px; /* Mantém alinhado à esquerda da caixa */
+    top: calc(-0.192 * 100px); /* Move o topo inclinado para cima da caixa */
+    right: -23px; /* Mantém alinhado à esquerda da caixa */
     background-color: #232838; /* Cor do topo da caixa */
     transform: skewX(-49deg); /* Inclina o topo */
     transform-origin: top; /* Origem da inclinação no topo */
@@ -145,11 +145,11 @@ body{
   
   .caixa3d::after {
     content: "";
-    width: calc(0.16 * 143px); /* Largura da lateral proporcional */
-    height: 112px; /* Altura da lateral igual à altura da caixa */
+    width: calc(0.16 * 136px); /* Largura da lateral proporcional */
+    height: 106px; /* Altura da lateral igual à altura da caixa */
     position: absolute;
     top: 0; /* Alinhado ao topo da caixa */
-    left: 143px; /* Posicionado à direita da caixa */
+    left: 136px; /* Posicionado à direita da caixa */
     background-color: #191c27; /* Cor da lateral direita (sombra mais escura) */
     transform: skewY(-42deg); /* Inclinação da lateral para simular profundidade */
     transform-origin: left; /* Inclinação se origina da esquerda da lateral */
@@ -157,6 +157,46 @@ body{
     transition: transform 1s, left 1s;
   }
 }
+@media (max-width: 310px) {
+
+  .caixa3d {
+    position: relative; /* Necessário para que os pseudoelementos sejam posicionados corretamente */
+    width: 123px; /* Largura da caixa principal */
+    height: 96px; /* Altura da caixa principal */
+    background-color: #2d3748; /* Cor da frente da caixa */
+    perspective: 383px; /* Dá uma perspectiva 3D mais realista */
+  }
+
+  .caixa3d::before {
+    content: "";
+    width: 123px; /* Largura do topo, igual à caixa principal */
+    height: calc(0.192 * 90px); /* Altura calculada em relação à altura da caixa */
+    position: absolute;
+    top: calc(-0.192 * 90px); /* Move o topo inclinado para cima da caixa */
+    right: -21px; /* Mantém alinhado à esquerda da caixa */
+    background-color: #232838; /* Cor do topo da caixa */
+    transform: skewX(-49deg); /* Inclina o topo */
+    transform-origin: top; /* Origem da inclinação no topo */
+    z-index: 1; /* Fica acima do conteúdo da caixa */
+    transition: transform 1s, left 1s;
+  }
+  
+  .caixa3d::after {
+    content: "";
+    width: calc(0.16 * 123px); /* Largura da lateral proporcional */
+    height: 96px; /* Altura da lateral igual à altura da caixa */
+    position: absolute;
+    top: 0; /* Alinhado ao topo da caixa */
+    left: 123px; /* Posicionado à direita da caixa */
+    background-color: #191c27; /* Cor da lateral direita (sombra mais escura) */
+    transform: skewY(-42deg); /* Inclinação da lateral para simular profundidade */
+    transform-origin: left; /* Inclinação se origina da esquerda da lateral */
+    z-index: -1; /* Fica atrás da caixa */
+    transition: transform 1s, left 1s;
+  }
+}
+
+
 
 .nftPiscando {
   background: linear-gradient(
