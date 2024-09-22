@@ -153,7 +153,9 @@ export async function addQueue(batch:number){
 
   const queueContract = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, signer);
 
-  await queueContract.addToQueue(batch);
+ const tx = await queueContract.addToQueue(batch);
+ await tx.wait();
+ return true;
 }
 
 export async function getCurrentBatch(){
@@ -237,25 +239,33 @@ export async function balanceFree(){
 
 }
 
+export async function isApproveToQueue(address:String){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
 
+  const getApprove = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+  const approve = await getApprove.isApprovedForAll(address, QUEUE_ADDRESS);
+  return approve;
+}
 
+export async function approveToAll(){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
 
+  const doApprove =new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+  const tx = await doApprove.setApprovalForAll(QUEUE_ADDRESS, true);
+  await tx.wait();
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export async function haveNft(address:string, value:number){
+  const addresses = [address];
+  const values = [value];
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+  const youHave = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+  const quantity = await youHave.balanceOfBatch(addresses, values);
+  return quantity;
+}
 
 
 export async function usersNft(batch:number, address:string){

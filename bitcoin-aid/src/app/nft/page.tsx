@@ -20,6 +20,9 @@ import {
   nextToPaid,
   balanceFree,
   totalNfts,
+  isApproveToQueue,
+  approveToAll,
+  haveNft,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
 import { blockData } from "@/services/types";
@@ -42,6 +45,7 @@ const SimpleSlider = () => {
   const {address, setAddress} = useWallet();
   const [approveToMint, setApproveToMint] = useState<boolean>(false);
   const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false);
+  const [approveQueue, setApproveQueue] = useState<boolean>(false);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Converte o valor para um número, se possível
@@ -49,6 +53,40 @@ const SimpleSlider = () => {
     const numericValue = value === "" ? "" : Number(value);
     setInputValue(numericValue);
   };
+
+  const handleApproveQueueOpen = () => {
+    setApproveQueue(false);
+    setNftAddOpen(false);
+  }
+
+  async function doApproveNft() {
+    setLoading(true);
+    setApproveQueue(false);
+    setApproveToMint(false);
+    try{
+      if(address){
+        await approveToAll();
+        setLoading(false);
+        setAlert("Very good! Now you can add your NFTs to the queues");
+      }
+    }catch(err){
+      setLoading(false);
+      setError("something went wrong");
+    }
+  }
+
+  async function isApprovedForAll(){
+    if(address){
+      const result = await isApproveToQueue(address);
+      if(result){
+        setNftAddOpen(true);
+      }else{
+        setApproveQueue(true);
+      }
+    }else{
+      setError("You need to connect wallet to interact with the project");
+    }
+  }
 
   async function nextFour(){
     const total = await totalNfts();
@@ -145,9 +183,34 @@ function youWillRecieved(value:number){
     }
   }
 
-  const handleSubmit = () => {
-    addQueue(Number(inputValue));
+  const handleSubmit = async () => {
+    if(Number(inputValue==0)){
+      setError("You must enter a valid batch");
+    }else{
+      if(address){
+        const result = await haveNft(address, Number(inputValue));
+        if(result > 0){
+          setNftAddOpen(false);
+          setLoading(true);
+          try{
+            const tx = await addQueue(Number(inputValue));
+            if(tx){
+              setLoading(false);
+              setAlert("Your nft has been successfully queued");
+              fetchQueue();
+              nextFour();
+            }
+          }catch(err){
+            setLoading(false);
+            setError("Ops! Something went wrong");
+          }
+        }else{
+        setNftAddOpen(false);
+        setError("You don't have any NFTs from this batch");
+      };
+    };
   };
+}
 
   const goApproveMint = () => {
     setApproveToMintOpen(true);
@@ -162,6 +225,7 @@ const handleApproveMintOpen = () => {
       if(result){
         setLoading(false);
         setAlert("Congratulations on purchasing your NFT")
+
       }else{
         setError("Failed to purchase nft")
         setLoading(false);
@@ -170,10 +234,6 @@ const handleApproveMintOpen = () => {
       setLoading(false);
       setError("Failed to purchase nft");
     }
-  };
-
-  const openAddNft = () => {
-    setNftAddOpen((prevState) => !prevState);
   };
 
   async function getNftPrice(currentBatch:number){
@@ -331,27 +391,16 @@ const handleApproveMintOpen = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row lg:justify-between lg:gap-6 mb-[30px] mt-[25px]">
-          <div className="mx-auto mr-[30px] lg:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4  border-2 border-[#d79920]">
+          <div className="mx-auto lg:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4  border-2 border-[#d79920]">
             <p className=" text-center text-[24px] mt-[20px]">
               Add your NFT's to Queue
             </p>
             <div className="w-full flex justify-center">
               <button
-                onClick={openAddNft}
+                onClick={isApprovedForAll}
                 className="bg-[#d79920] w-[200px] p-[10px] rounded-full mb-[20px] glossy_cta hover:bg-[#a47618]"
               >
                 <p className="text-[20px] font-semibold">Add NFT +</p>
-              </button>
-            </div>
-          </div>
-
-          <div className="mx-auto lg:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4 border-2 border-[#3a6e01]">
-            <p className="text-center text-[24px] mt-[20px]">
-              Claim NFT's Rewards
-            </p>
-            <div className="w-full flex justify-center">
-              <button className="bg-[#3a6e01] w-[200px] p-[10px] rounded-full mb-[20px] glossy_claim hover:bg-[#274c00]">
-                <p className="font-semibold text-[20px]">Claim</p>
               </button>
             </div>
           </div>
@@ -381,7 +430,7 @@ const handleApproveMintOpen = () => {
               </h2>
               <Slider 
                 {...settings(dataSet.length)}
-                className="w-full sm:max-w-[90%] max-w-[95%] lg:ml-[30px] ml-[10px] h-full mt-[10px] md:text-[16px] sm:text-[12px] text-[10px]">
+                className="w-full sm:max-w-[90%] max-w-[95%] lg:ml-[30px] ml-[10px] h-full mt-[10px] lg:text-[16px] sm:text-[12px] text-[10px]">
                 {dataSet.map((item, itemIndex) => (
                   item.user && item.user.toLowerCase() === address && item.nextPaied === false ?(
                   <div key={itemIndex} className="">
@@ -403,10 +452,6 @@ const handleApproveMintOpen = () => {
                       </p>
                       <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
                       <p>
-                        Batch Level:{" "}
-                        {item.batchLevel ? item.batchLevel.toString() : "N/A"}
-                      </p>
-                      <p>
                       Will Received: {youWillRecieved(Number(item.batchLevel))}$
                       </p>
                     </div>
@@ -418,7 +463,6 @@ const handleApproveMintOpen = () => {
                       <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
-                      
                       <p>
                         User:{" "}
                         <span>
@@ -431,10 +475,14 @@ const handleApproveMintOpen = () => {
                         </span>
                       </p>
                       <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
-                      <p>
-                        Batch Level:{" "}
-                        {item.batchLevel ? item.batchLevel.toString() : "N/A"}
-                      </p>
+                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? `Will Received ${youWillRecieved(Number(item.batchLevel))}$` : "N/A"}</p>
+                      {item.user.toLocaleLowerCase() === address ? (
+                        <div className="relative w-[100%] lg:h-[35%] h-[25%] flex flex-col justify-end">
+                        <button className="absolute bottom-0 left-1/2 transform -translate-x-1/2 shadow-black border-[1px] border-white justify-center w-[60%]  py-[2%] glossy rounded-xl mt-[8%] md:text-[12px] text-[8px]">CLAIM</button>
+                        </div>
+                      ):(
+                        ""
+                      )}
                     </div>
                   </div>
                   ): item.user && item.nextPaied == false ? (
@@ -455,10 +503,6 @@ const handleApproveMintOpen = () => {
                         </span>
                       </p>
                       <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
-                      <p>
-                        Batch Level:{" "}
-                        {item.batchLevel ? item.batchLevel.toString() : "N/A"}
-                      </p>
                     </div>
                   </div>
                   ):(
@@ -477,12 +521,12 @@ const handleApproveMintOpen = () => {
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div
             className="fixed inset-0 bg-black opacity-80"
-            onClick={openAddNft}
+            onClick={handleApproveQueueOpen}
           ></div>
           <div className="relative bg-[#201f1b] border-2 border-[#eda921] p-6 rounded-lg shadow-lg w-[80%] max-w-lg z-10">
             <button
               className="absolute top-4 right-4 text-red-600"
-              onClick={openAddNft}
+              onClick={handleApproveQueueOpen}
             >
               <p className="font-bold">X</p>
             </button>
@@ -527,6 +571,27 @@ const handleApproveMintOpen = () => {
           </div>
         </div>
       ) : (
+        ""
+      )}
+
+      {approveQueue ?(
+        <div onClick={handleApproveQueueOpen} className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black opacity-80" ></div>
+          <div className="relative items-center justify-center flex bg-[#201f1b] border-2 border-[#eda921] p-6 rounded-lg shadow-lg w-[80%] max-w-lg z-10">
+              <div className="w-[100%] flex items-center justify-center flex-col">                
+                <TbLockAccess className="border-2 text-[80px] rounded-full p-[20px] border-white"/> 
+                <p className="font-Agency text-[35px] mt-[10px]">Unlock NFT's</p>
+                <p className="text-center text-[18px] mt-[6px]">We need your permission to add your NFTs to the queue on your behalf!</p>
+                <p className="text-center text-[14px] mt-[6px]">You only need to do this once</p>
+                {address?(
+                  <button onClick={doApproveNft} className=" font-semibold rounded-3xl bg-[#eda921] px-[30px] py-[12px] my-[20px]">Approve NFT's</button>
+                ):(
+                 ""
+                )}
+               </div>
+           </div>
+         </div>
+      ):(
         ""
       )}
     </>

@@ -357,12 +357,12 @@ useEffect(() => {
                     balanceValue !== null ? (
                       <>
                       <p className="text-[25px]">Wallet Balance</p>
-                      <span className="font-semibold text-[22px]"> {ethers.formatEther(balanceValue)} AiD</span>
+                      <span className="font-semibold text-[22px]"> {Number(ethers.formatEther(balanceValue)).toFixed(2)} BTCA</span>
                       </>
                     ) : (
                       <>
                       <p className="text-[25px]">Wallet Balance</p>
-                      <p className="text-[22px] font-semibold">00.0000 AiD</p>
+                      <p className="text-[22px] font-semibold">00.0000 BTCA</p>
                       </>
                     ) 
                   ) : (
