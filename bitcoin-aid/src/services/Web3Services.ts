@@ -272,8 +272,30 @@ export async function usersNft(batch:number, address:string){
   const provider = await getProvider();
   const signer = await provider.getSigner();
 
-  const nftUsers = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", collectionAbi, signer);
+  const nftUsers = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
 
   const nfts = await nftUsers.getUsersNFTsInSpecificQueue(batch, address);
   return nfts;
+}
+
+
+export async function claimQueue(index:number, queueId:number){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const doClaim = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, signer);
+  const tx = await doClaim.claim(index, queueId);
+
+  await tx.wait()
+  return true;
+}
+
+export async function getNftUserByBatch(address:string, batch:number) {
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const get = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+
+  const result = await get.balanceOf(address,batch);
+  return result;
 }

@@ -123,19 +123,19 @@ body{
 
   .caixa3d {
     position: relative; /* Necessário para que os pseudoelementos sejam posicionados corretamente */
-    width: 136px; /* Largura da caixa principal */
-    height: 106px; /* Altura da caixa principal */
+    width: 142px; /* Largura da caixa principal */
+    height: 111px; /* Altura da caixa principal */
     background-color: #2d3748; /* Cor da frente da caixa */
-    perspective: 425px; /* Dá uma perspectiva 3D mais realista */
+    perspective: 450px; /* Dá uma perspectiva 3D mais realista */
   }
 
   .caixa3d::before {
     content: "";
-    width: 136px; /* Largura do topo, igual à caixa principal */
-    height: calc(0.192 * 100px); /* Altura calculada em relação à altura da caixa */
+    width: 142px; /* Largura do topo, igual à caixa principal */
+    height: calc(0.192 * 105px); /* Altura calculada em relação à altura da caixa */
     position: absolute;
-    top: calc(-0.192 * 100px); /* Move o topo inclinado para cima da caixa */
-    right: -23px; /* Mantém alinhado à esquerda da caixa */
+    top: calc(-0.192 * 105px); /* Move o topo inclinado para cima da caixa */
+    right: -22px; /* Mantém alinhado à esquerda da caixa */
     background-color: #232838; /* Cor do topo da caixa */
     transform: skewX(-49deg); /* Inclina o topo */
     transform-origin: top; /* Origem da inclinação no topo */
@@ -145,11 +145,11 @@ body{
   
   .caixa3d::after {
     content: "";
-    width: calc(0.16 * 136px); /* Largura da lateral proporcional */
-    height: 106px; /* Altura da lateral igual à altura da caixa */
+    width: calc(0.16 * 142px); /* Largura da lateral proporcional */
+    height: 111px; /* Altura da lateral igual à altura da caixa */
     position: absolute;
     top: 0; /* Alinhado ao topo da caixa */
-    left: 136px; /* Posicionado à direita da caixa */
+    left: 142px; /* Posicionado à direita da caixa */
     background-color: #191c27; /* Cor da lateral direita (sombra mais escura) */
     transform: skewY(-42deg); /* Inclinação da lateral para simular profundidade */
     transform-origin: left; /* Inclinação se origina da esquerda da lateral */

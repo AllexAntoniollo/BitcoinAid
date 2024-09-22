@@ -23,6 +23,7 @@ import {
   isApproveToQueue,
   approveToAll,
   haveNft,
+  claimQueue,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
 import { blockData } from "@/services/types";
@@ -46,6 +47,25 @@ const SimpleSlider = () => {
   const [approveToMint, setApproveToMint] = useState<boolean>(false);
   const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false);
   const [approveQueue, setApproveQueue] = useState<boolean>(false);
+
+  async function doClaimQueue(index:number, queueId:number){
+    if(address){
+      try{
+        setLoading(true);
+        const result = await claimQueue(index, queueId);
+        if(result){
+          setLoading(false);
+          setAlert("Be happy! Your NFTs have already deposited their earnings into your wallet");
+          fetchQueue();
+          nextFour();
+        }
+      }catch(err){
+        setLoading(false);
+        setError("Ops! Something went wrong");
+      }
+      
+    }
+  }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Converte o valor para um número, se possível
@@ -351,7 +371,7 @@ const handleApproveMintOpen = () => {
     {error && <Error msg={error} onClose={clearError} />}
     {alert && <Alert msg={alert} onClose={clearAlert}/>}
     {loading && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed h-full inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-10 h-10 border-t-4 border-b-4 border-[#d79920] rounded-full animate-spin"></div>
     </div>
   )}
@@ -450,7 +470,6 @@ const handleApproveMintOpen = () => {
                             : "N/A"}
                         </span>
                       </p>
-                      <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
                       <p>
                       Will Received: {youWillRecieved(Number(item.batchLevel))}$
                       </p>
@@ -458,7 +477,7 @@ const handleApproveMintOpen = () => {
                   </div>
                   ) : item.user && item.nextPaied === true ? (
                     <div key={itemIndex} className="relative">
-                    <div className="nftPaidPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d">
+                    <div className="nftPaidPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d h-full flex flex-col justify-between">
                       <div className="">
                       <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
@@ -474,17 +493,15 @@ const handleApproveMintOpen = () => {
                             : "N/A"}
                         </span>
                       </p>
-                      <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
                       <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? `Will Received ${youWillRecieved(Number(item.batchLevel))}$` : "N/A"}</p>
                       {item.user.toLocaleLowerCase() === address ? (
-                        <div className="relative w-[100%] lg:h-[35%] h-[25%] flex flex-col justify-end">
-                        <button className="absolute bottom-0 left-1/2 transform -translate-x-1/2 shadow-black border-[1px] border-white justify-center w-[60%]  py-[2%] glossy rounded-xl mt-[8%] md:text-[12px] text-[8px]">CLAIM</button>
-                        </div>
-                      ):(
-                        ""
-                      )}
+                       <button onClick={() => doClaimQueue(Number(item.index), Number(item.batchLevel))} className="absolute justify-center left-1/2 transform -translate-x-1/2 py-[2px] w-[80%] flex bottom-0 border-[1px] text-[8px] md:text-[12px] border-white rounded-lg mt-[10px] glossy_claim">CLAIM</button>
+                    ):(
+                      ""
+                     )}
                     </div>
                   </div>
+                  
                   ): item.user && item.nextPaied == false ? (
                     <div key={itemIndex} className="relative">
                     <div className="nftPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d">
@@ -502,7 +519,6 @@ const handleApproveMintOpen = () => {
                             : "N/A"}
                         </span>
                       </p>
-                      <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
                     </div>
                   </div>
                   ):(
