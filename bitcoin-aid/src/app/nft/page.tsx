@@ -371,7 +371,7 @@ const handleApproveMintOpen = () => {
     {error && <Error msg={error} onClose={clearError} />}
     {alert && <Alert msg={alert} onClose={clearAlert}/>}
     {loading && (
-    <div className="fixed h-full inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-10 h-10 border-t-4 border-b-4 border-[#d79920] rounded-full animate-spin"></div>
     </div>
   )}

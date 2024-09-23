@@ -185,7 +185,7 @@ async function getAllowance(address:string, contract:string){
       const ok = await claim();
       if(ok){
         setLoading(false);
-        setAlert(`Your $${Number(userBalanceValue)/1000000} dollars in AiD are now available in your wallet`);
+        setAlert(`Your $${Number(userBalanceValue)/1000000} dollars in BTCA are now available in your wallet`);
         if(address){
         await getUserBalance(address);
         }
@@ -312,15 +312,15 @@ useEffect(() => {
           <p className="leading-tight font-Agency text-[70px] sm:text-[90px] font-normal w-full">Bitcoin AiD Protocol</p>
           <div className="mt-[50px] w-full lg:max-w-[40%] max-w-[100%] border-l-2 border-[#282722] p-8 ">
             {poolBalanceValue ? (
-              <p className="font-semibold text-[35px] lg:text-[46px] w-full">{ethers.formatEther(poolBalanceValue)}<span className="text-[#d79920]">AiD</span></p>
+              <p className="font-semibold text-[35px] lg:text-[46px] w-full">{ethers.formatEther(poolBalanceValue)}<span className="text-[#d79920]">BTCA</span></p>
             ) : (
-              <p className="font-semibold text-[35px] lg:text-[46px] w-full">----- <span className="text-[#d79920]">AiD</span></p>
+              <p className="font-semibold text-[35px] lg:text-[46px] w-full">----- <span className="text-[#d79920]">BTCA</span></p>
             )}
             <p className="text-[#d79920] text-[13px] lg:text-[18px] font-semibold ">Donation Pool</p>
           </div>
           <div className="mt-[30px] lg:mt-[50px] w-[100%] md:w-[60%] border-l-2 border-[#282722] p-8 ">
             <p className="font-semibold text-[35px] lg:text-[46px] w-full ">$0.0002380</p>
-            <p className="text-[#d79920] text-[13px] lg:text-[18px] font-semibold">1 AiD Price</p>
+            <p className="text-[#d79920] text-[13px] lg:text-[18px] font-semibold">1 BTCA Price</p>
           </div>
 
           <div className="btn-days w-full">
@@ -348,7 +348,7 @@ useEffect(() => {
             <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[98%] lg:w-[45%] border-2 border-[#d79920] rounded-[3rem] lg:mr-[40px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
-              <p className="text-[30px] font-semibold">Contribute AiD</p>
+              <p className="text-[30px] font-semibold">Contribute BTCA</p>
               </div>
 
               <div className="flex flex-col justify-between m-auto w-[100%] sm:w-[95%] h-[300px] bg-[#434139] rounded-3xl mb-[20px]">
@@ -368,7 +368,7 @@ useEffect(() => {
                   ) : (
                     <>
                     <p className="text-[25px]">Wallet Balance</p>
-                    <p className="text-[22px] font-semibold">---- AiD</p>
+                    <p className="text-[22px] font-semibold">---- BTCA</p>
                     </>
                   )}
                   <p className="text-[16px] text-[#eda921]">$235.62</p>
@@ -380,7 +380,7 @@ useEffect(() => {
                   ):(
                     <>
                     <p className="text-[22px] mt-[20px]">Total Contributed</p>
-                    <p className="text-[22px] font-semibold">---- <span className="">AiD</span></p>
+                    <p className="text-[22px] font-semibold">---- <span className="">BTCA</span></p>
                     </>
                   )}
                 </div>
@@ -396,7 +396,7 @@ useEffect(() => {
             <div className="max-w-[700px] p-[20px] bg-gradient-to-t from-[#201f1b] to-[#434139] w-[100%] md:w-[98%] md:mb-[0px] mb-[40px] lg:w-[45%] border-2 border-[#3a6e01] rounded-[3rem] lg:mr-[40px] mt-[30px] lg:mt-[0px]">
               <div className="flex items-center">
               <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={150} height={150} className="max-w-[25%] max-h-[25%]" />
-              <p className="text-[30px] font-semibold">Claim AiD</p>
+              <p className="text-[30px] font-semibold">Claim BTCA</p>
               </div>
 
               <div className="flex justify-between flex-col items-center mb-[20px] m-auto w-[100%] sm:w-[95%] h-[300px] bg-[#434139] rounded-3xl">
@@ -443,7 +443,7 @@ useEffect(() => {
              >
                <p className="font-bold">X</p>
              </button>
-             <p className="text-center text-white text-[23px]">Contributing <span className="text-[#eda921]">AiD</span></p>
+             <p className="text-center text-white text-[23px]">Contributing <span className="text-[#eda921]">BTCA</span></p>
               {address ? (
                 <>
                 <input onChange={(e) => setValue(e.target.value)} value={value} className="w-full m-w-[90%] p-2 bg-[#33322d] rounded-3xl mt-[20px] focus:outline-none focus:border-2 focus:border-[#eda921]" type="number" placeholder={ethers.formatEther(balanceValue)}></input>
