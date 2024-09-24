@@ -4,12 +4,14 @@ import donationAbi from "./Donation.abi.json";
 import queueAbi from "./Queue.abi.json";
 import collectionAbi from "./Collection.abi.json";
 import usdtAbi from "./Usdt.abi.json";
+import oracleAbi from "./Oracle.abi.json";
 const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID;
 const TOKEN_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_ADDRESS;
 const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
 const QUEUE_ADDRESS = process.env.NEXT_PUBLIC_QUEUE_ADDRESS;
 const COLLECTION_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ADDRESS;
-const USDT_ADDRESS = process.env.NEXT_PUBLIC_USDT_ADDRESS
+const USDT_ADDRESS = process.env.NEXT_PUBLIC_USDT_ADDRESS;
+const ORACLE_ADDRESS = process.env.NEXT_PUBLIC_ORACLE_ADDRESS;
 import { nftQueue } from "./types";
 import { promises } from "dns";
 
@@ -153,7 +155,9 @@ export async function addQueue(batch:number){
 
   const queueContract = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, signer);
 
-  await queueContract.addToQueue(batch);
+ const tx = await queueContract.addToQueue(batch);
+ await tx.wait();
+ return true;
 }
 
 export async function getCurrentBatch(){
@@ -204,35 +208,114 @@ export async function approveMint(value:BigInt) {
   return true;
 }
 
+export async function nextToPaid(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
+
+  const getNextFour = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, provider);
+
+  const nextFour = await getNextFour.getNextUsersToPaid();
+  return nextFour;
+}
 
 
+export async function totalNfts(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
 
+  const getNextFour = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, provider);
 
+  const total = await getNextFour.totalNFTsInQueue();
+  return total;
+}
 
+export async function balanceFree(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
 
+  const getNextFour = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, provider);
 
+  try{
+    const balance = await getNextFour.balanceFree();
+    return balance;
+  }catch(err){
+    return false;
+  }
 
+}
 
+export async function isApproveToQueue(address:String){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
 
+  const getApprove = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+  const approve = await getApprove.isApprovedForAll(address, QUEUE_ADDRESS);
+  return approve;
+}
 
+export async function approveToAll(){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
 
+  const doApprove =new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+  const tx = await doApprove.setApprovalForAll(QUEUE_ADDRESS, true);
+  await tx.wait();
+}
 
-
-
-
-
-
-
-
-
+export async function haveNft(address:string, value:number){
+  const addresses = [address];
+  const values = [value];
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+  const youHave = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+  const quantity = await youHave.balanceOfBatch(addresses, values);
+  return quantity;
+}
 
 
 export async function usersNft(batch:number, address:string){
   const provider = await getProvider();
   const signer = await provider.getSigner();
 
-  const nftUsers = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", collectionAbi, signer);
+  const nftUsers = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
 
   const nfts = await nftUsers.getUsersNFTsInSpecificQueue(batch, address);
   return nfts;
+}
+
+
+export async function claimQueue(index:number, queueId:number){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const doClaim = new ethers.Contract(QUEUE_ADDRESS ? QUEUE_ADDRESS : "", queueAbi, signer);
+  const tx = await doClaim.claim(index, queueId);
+
+  await tx.wait()
+  return true;
+}
+
+export async function getNftUserByBatch(address:string, batch:number) {
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const get = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
+
+  const result = await get.balanceOf(address,batch);
+  return result;
+}
+
+export async function getTokenPrice(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
+  const get = new ethers.Contract(ORACLE_ADDRESS ? ORACLE_ADDRESS : "", oracleAbi, provider);
+
+  const result = await get.returnPrice();
+  return result;
+}
+
+export async function getBalanceClaim(address:string){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const get = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
+
+  const result = await get.previewTotalValue(address);
+  return result;
 }

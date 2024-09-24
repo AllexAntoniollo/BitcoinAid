@@ -36,7 +36,7 @@ export default function Footer(){
     </div>
 
     <div className="w-[25%]">
-    <Link href="/" className="flex flex-col items-center">
+    <Link href="https://sosia.gitbook.io/bitcoinaid" target="_blank" className="flex flex-col items-center">
       <IoDocumentText className=" text-[18px] md:text-[20px]"/>
       <p className="">About</p>
     </Link>

@@ -17,13 +17,26 @@ import {
   mintNft,
   nftPrice,
   approveMint,
+  nextToPaid,
+  balanceFree,
+  totalNfts,
+  isApproveToQueue,
+  approveToAll,
+  haveNft,
+  claimQueue,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
+import { blockData } from "@/services/types";
 import Image from "next/image";
+import { BlockList } from "net";
 
 const SimpleSlider = () => {
   const [loading, setLoading] = useState(false);
   const [queueData, setQueueData] = useState<nftQueue[][]>([]);
+  const [blockData, setBlockData] = useState<blockData[][]>([]);
+  const [nextPaid, setNextPaid] = useState<nftQueue[]>();
+  const [balance, setBalance] = useState<number>();
+  const [valuesNextFour, setValuesNextFour]= useState<number[]>([]);
   const [currentBatch, setCurrentBatch] = useState<number>(0);
   const [addNftOpen, setNftAddOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<number | "">("");
@@ -32,7 +45,27 @@ const SimpleSlider = () => {
   const [alert, setAlert] = useState("");
   const {address, setAddress} = useWallet();
   const [approveToMint, setApproveToMint] = useState<boolean>(false);
-  const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false)
+  const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false);
+  const [approveQueue, setApproveQueue] = useState<boolean>(false);
+
+  async function doClaimQueue(index:number, queueId:number){
+    if(address){
+      try{
+        setLoading(true);
+        const result = await claimQueue(index, queueId);
+        if(result){
+          setLoading(false);
+          setAlert("Be happy! Your NFTs have already deposited their earnings into your wallet");
+          fetchQueue();
+          nextFour();
+        }
+      }catch(err){
+        setLoading(false);
+        setError("Ops! Something went wrong");
+      }
+      
+    }
+  }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Converte o valor para um número, se possível
@@ -40,6 +73,109 @@ const SimpleSlider = () => {
     const numericValue = value === "" ? "" : Number(value);
     setInputValue(numericValue);
   };
+
+  const handleApproveQueueOpen = () => {
+    setApproveQueue(false);
+    setNftAddOpen(false);
+  }
+
+  async function doApproveNft() {
+    setLoading(true);
+    setApproveQueue(false);
+    setApproveToMint(false);
+    try{
+      if(address){
+        await approveToAll();
+        setLoading(false);
+        setAlert("Very good! Now you can add your NFTs to the queues");
+      }
+    }catch(err){
+      setLoading(false);
+      setError("something went wrong");
+    }
+  }
+
+  async function isApprovedForAll(){
+    if(address){
+      const result = await isApproveToQueue(address);
+      if(result){
+        setNftAddOpen(true);
+      }else{
+        setApproveQueue(true);
+      }
+    }else{
+      setError("You need to connect wallet to interact with the project");
+    }
+  }
+
+  async function nextFour(){
+    const total = await totalNfts();
+    if(total >= 4){
+      const result = await nextToPaid();
+      let getBalance = await balanceFree();
+    let balance = (parseInt(getBalance) / Math.pow(10, 18));
+    console.log("Tem %d aid disponivel pras nft", balance);
+
+    let valueNextFour = [];
+    let nextPaidArray = [];
+    setBalance(balance);
+    for(let i = 0; i < Math.min(result.length, 4); i++){
+      let start = 10;
+      const lote = result[i].batchLevel;
+      for(let j = 1; j < lote; j++){
+        start = start*2;
+      }
+      const calculatedValue = start*3;
+      valueNextFour.push(calculatedValue);
+    }
+    for(let k = 0; k<4; k++){
+      balance -= valueNextFour[k]; 
+      console.log("balance atual",balance);
+      if(balance > 0){
+        nextPaidArray.push(result[k]);
+      }
+    }
+    setNextPaid(nextPaidArray);
+    }else{
+      let dontNextPaied = undefined;
+      setNextPaid(dontNextPaied);
+    }
+  }
+
+  async function verificaPaied() {
+    const flattenedArray: blockData[][] = [];
+    for (let i = 0; i < queueData.length; i++) {
+      // Inicializa o array para cada `i`
+      flattenedArray[i] = [];
+      
+      for (let j = 0; j < queueData[i].length; j++) {
+        const item = queueData[i][j];
+        const isPaied = nextPaid ? nextPaid.some(next => next.index === item.index) : false;
+        // Atribua um novo objeto no índice apropriado
+        flattenedArray[i][j] = {
+          user: item.user,
+          index: item.index,
+          batchLevel: item.batchLevel,
+          nextPaied: isPaied,
+        };
+      }
+    }
+  
+    console.log('Atualizando blockData:', flattenedArray);
+    setBlockData(flattenedArray);
+  }
+  
+
+function youWillRecieved(value:number){
+    let start = 10;
+    let recieved;
+    for(let j = 1; j < value; j++){
+      start = start*2;
+    }
+    const calculatedValue = start*3;
+    return calculatedValue;
+  }
+
 
   async function approveToMintNft(value:number){
     try{
@@ -67,9 +203,34 @@ const SimpleSlider = () => {
     }
   }
 
-  const handleSubmit = () => {
-    addQueue(Number(inputValue));
+  const handleSubmit = async () => {
+    if(Number(inputValue==0)){
+      setError("You must enter a valid batch");
+    }else{
+      if(address){
+        const result = await haveNft(address, Number(inputValue));
+        if(result > 0){
+          setNftAddOpen(false);
+          setLoading(true);
+          try{
+            const tx = await addQueue(Number(inputValue));
+            if(tx){
+              setLoading(false);
+              setAlert("Your nft has been successfully queued");
+              fetchQueue();
+              nextFour();
+            }
+          }catch(err){
+            setLoading(false);
+            setError("Ops! Something went wrong");
+          }
+        }else{
+        setNftAddOpen(false);
+        setError("You don't have any NFTs from this batch");
+      };
+    };
   };
+}
 
   const goApproveMint = () => {
     setApproveToMintOpen(true);
@@ -84,6 +245,7 @@ const handleApproveMintOpen = () => {
       if(result){
         setLoading(false);
         setAlert("Congratulations on purchasing your NFT")
+
       }else{
         setError("Failed to purchase nft")
         setLoading(false);
@@ -92,10 +254,6 @@ const handleApproveMintOpen = () => {
       setLoading(false);
       setError("Failed to purchase nft");
     }
-  };
-
-  const openAddNft = () => {
-    setNftAddOpen((prevState) => !prevState);
   };
 
   async function getNftPrice(currentBatch:number){
@@ -122,6 +280,7 @@ const handleApproveMintOpen = () => {
       for (let i = 1; i <= result; i++) {
         promises.push(getQueue(i));
       }
+
       const results = await Promise.all(promises);
       setQueueData(results);
       console.log("resultado ", results);
@@ -130,8 +289,20 @@ const handleApproveMintOpen = () => {
     }
   };
   useEffect(() => {
-    fetchQueue();
+    const fetchData = async () => {
+      await fetchQueue();
+      await nextFour();
+    };
+  
+    fetchData();
   }, []);
+  
+  useEffect(() => {
+    if (queueData.length > 0) {
+      verificaPaied();
+    }
+  }, [queueData, nextPaid]);
+  
 
   useEffect(() => {
     if(currentBatch){
@@ -139,60 +310,61 @@ const handleApproveMintOpen = () => {
     }
   },[currentBatch])
 
-  const settings = (dataSetLength: number) => ({
-    dots: true,
-    infinite: false, // Desativa o efeito "infinite" se houver menos de 3 itens
-    speed: 500,
-    slidesToShow: 3, // Mostra no máximo 4 slides
-    slidesToScroll: Math.min(3, dataSetLength), // Rola no máximo 4 slides
-    adaptiveHeight: true, // Ajusta a altura do slider com base no conteúdo
-    arrows: dataSetLength > 3, // Mostra as setas de navegação apenas se houver mais de 3 itens
-    swipe: dataSetLength > 3, // Permite o swipe apenas se houver mais de 3 itens
-    touchMove: dataSetLength > 3, // Permite o movimento com toque apenas se houver mais de 3 itens
-    draggable: dataSetLength > 3,
+  const settings = (dataSetLength: number) => {
+    const handleBeforeChange = (next:number) => {
+      // Previne ir além do número total de slides
+      if (next >= dataSetLength) {
+        return false; // Impede a transição se o próximo slide ultrapassar o limite
+      }
 
-    responsive: [
-      {
-        breakpoint: 1300, // Largura da tela para o breakpoint
-        settings: {
-          slidesToShow: 2,
-          slidesToScroll: 2,
-          infinite: false,
-          dots: true,
-          arrows: dataSetLength > 2, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: dataSetLength > 2, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: dataSetLength > 2, // Permite o movimento com toque apenas se houver mais de 3 itens
-          draggable: dataSetLength > 2,
+    };
+    const maxSlidesToShow = 4;
+    return {
+      dots: true,
+      infinite: false, // Desativa o loop infinito
+      speed: 500,
+      slidesToShow: Math.min(maxSlidesToShow, dataSetLength), // Mostra no máximo 4 slides ou menos
+      slidesToScroll: 1, // Desliza no máximo 1 slide por vez
+      adaptiveHeight: true,
+      arrows: dataSetLength > maxSlidesToShow, // Exibe setas se houver mais que 4 slides
+      swipe: true,
+      touchMove: true,
+      draggable: dataSetLength > 1,
+      beforeChange: handleBeforeChange, // Permite arrastar se houver mais de 1 slide
+  
+      responsive: [
+        {
+          breakpoint: 1300,
+          settings: {
+            slidesToShow: Math.min(3, dataSetLength),
+            slidesToScroll: 1,
+            beforeChange: handleBeforeChange,
+          },
         },
-      },
-      {
-        breakpoint: 950,
-        settings: {
-          slidesToShow: 2,
-          slidesToScroll: 2,
-          infinite: false,
-          dots: true,
-          arrows: dataSetLength > 2, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: dataSetLength > 2, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: dataSetLength > 2, // Permite o movimento com toque apenas se houver mais de 3 itens
-          draggable: dataSetLength > 2,
+        {
+          breakpoint: 1024,
+          settings: {
+            slidesToShow: Math.min(3, dataSetLength),
+            slidesToScroll: 1,
+            beforeChange: handleBeforeChange,
+          },
         },
-      },
-      {
-        breakpoint: 890, // Largura da tela para o breakpoint
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          infinite: false,
-          dots: true,
-          arrows: dataSetLength > 1, // Mostra as setas de navegação apenas se houver mais de 3 itens
-          swipe: dataSetLength > 1, // Permite o swipe apenas se houver mais de 3 itens
-          touchMove: dataSetLength > 1, // Permite o movimento com toque apenas se houver mais de 3 itens
-          draggable: dataSetLength > 1,
+        {
+          breakpoint: 950,
+          settings: {
+            slidesToShow: 2,
+            slidesToScroll: 1,
+            dots: false,
+            arrows: false,
+            beforeChange: handleBeforeChange,
+          },
         },
-      },
-    ],
-  });
+      ],
+    };
+  };
+  
+    
+   
   return (
     <>
     
@@ -204,7 +376,7 @@ const handleApproveMintOpen = () => {
     </div>
   )}
 
-      <div className=" w-full sm:max-w-[90%] max-w-[98%] m-auto p-4">
+      <div className=" w-full sm:max-w-[90%] max-w-[98%] m-auto sm:p-4">
         <p className="mt-[40px] mb-[40px] leading-tight font-Agency text-[50px] sm:text-[80px] font-normal w-full">
           Bitcoin AiD Protocol - NFT Payment Queue
         </p>
@@ -238,28 +410,17 @@ const handleApproveMintOpen = () => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:justify-between md:gap-6 mb-[30px] mt-[25px]">
-          <div className="mx-auto mr-[30px] md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4  border-2 border-[#d79920]">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:gap-6 mb-[30px] mt-[25px]">
+          <div className="mx-auto lg:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4  border-2 border-[#d79920]">
             <p className=" text-center text-[24px] mt-[20px]">
               Add your NFT's to Queue
             </p>
             <div className="w-full flex justify-center">
               <button
-                onClick={openAddNft}
+                onClick={isApprovedForAll}
                 className="bg-[#d79920] w-[200px] p-[10px] rounded-full mb-[20px] glossy_cta hover:bg-[#a47618]"
               >
                 <p className="text-[20px] font-semibold">Add NFT +</p>
-              </button>
-            </div>
-          </div>
-
-          <div className="mx-auto md:w-[40%] w-full bg-[#26251f35] h-[200px] mt-[20px] flex flex-col justify-between items-center p-4 border-2 border-[#3a6e01]">
-            <p className="text-center text-[24px] mt-[20px]">
-              Claim NFT's Rewards
-            </p>
-            <div className="w-full flex justify-center">
-              <button className="bg-[#3a6e01] w-[200px] p-[10px] rounded-full mb-[20px] glossy_claim hover:bg-[#274c00]">
-                <p className="font-semibold text-[20px]">Claim</p>
               </button>
             </div>
           </div>
@@ -277,7 +438,7 @@ const handleApproveMintOpen = () => {
           </div>
           <p className="ml-[5px]">Your Nft's</p>
         </div>
-          {queueData.map((dataSet, index) => {
+          {blockData.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
             return hasUserData ? (
 
@@ -289,14 +450,13 @@ const handleApproveMintOpen = () => {
               </h2>
               <Slider 
                 {...settings(dataSet.length)}
-                className="w-full sm:max-w-[90%] max-w-[90%] mx-auto h-full mt-[10px]"
-              >
+                className="w-full sm:max-w-[90%] max-w-[95%] lg:ml-[30px] ml-[10px] h-full mt-[10px] lg:text-[16px] sm:text-[12px] text-[10px]">
                 {dataSet.map((item, itemIndex) => (
-                  item.user && item.user.toLowerCase() === address ?(
-                  <div key={itemIndex} className="mr-[10px]">
-                    
-                    <div className="mt-[50px] ml-[50px] nftUserPiscando p-4 h-[200px] max-w-[100%] w-[260px] caixa3d transform transition-transform">
+                  item.user && item.user.toLowerCase() === address && item.nextPaied === false ?(
+                  <div key={itemIndex} className="">
+                    <div className="mt-[50px] nftUserPiscando p-2 lg:p-4 caixa3d transform transition-transform">
                       <div className="">
+                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
                       <p>
@@ -310,27 +470,16 @@ const handleApproveMintOpen = () => {
                             : "N/A"}
                         </span>
                       </p>
-
-                      <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
                       <p>
-                        Batch Level:{" "}
-                        {item.batchLevel ? item.batchLevel.toString() : "N/A"}
-                      </p>
-                      <p>
-                        Dollars Claimed:{" "}
-                        {item.dollarsClaimed
-                          ? item.dollarsClaimed.toString()
-                          : "N/A"}
-                      </p>
-                      <p>
-                      Will Received: {Number(nftCurrentPrice)*3}$
+                      Will Received: {youWillRecieved(Number(item.batchLevel))}$
                       </p>
                     </div>
                   </div>
-                  ) : item.user ? (
-                    <div key={itemIndex} className="mr-[10px]">
-                    <div className="nftPiscando mt-[50px] ml-[50px] p-4 transform transition-transform h-[200px] max-w-[100%] w-[260px] caixa3d">
+                  ) : item.user && item.nextPaied === true ? (
+                    <div key={itemIndex} className="relative">
+                    <div className="nftPaidPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d h-full flex flex-col justify-between">
                       <div className="">
+                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
                         <h3>Posição da Fila: {itemIndex + 1}</h3>
                       </div>
                       <p>
@@ -344,10 +493,31 @@ const handleApproveMintOpen = () => {
                             : "N/A"}
                         </span>
                       </p>
-                      <p>Index: {item.index ? item.index.toString() : "N/A"}</p>
+                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? `Will Received ${youWillRecieved(Number(item.batchLevel))}$` : "N/A"}</p>
+                      {item.user.toLocaleLowerCase() === address ? (
+                       <button onClick={() => doClaimQueue(Number(item.index), Number(item.batchLevel))} className="absolute justify-center left-1/2 transform -translate-x-1/2 py-[2px] w-[80%] flex bottom-0 border-[1px] text-[8px] md:text-[12px] border-white rounded-lg mt-[10px] glossy_claim">CLAIM</button>
+                    ):(
+                      ""
+                     )}
+                    </div>
+                  </div>
+                  
+                  ): item.user && item.nextPaied == false ? (
+                    <div key={itemIndex} className="relative">
+                    <div className="nftPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d">
+                      <div className="">
+                        <h3>Posição da Fila: {itemIndex + 1}</h3>
+                      </div>
                       <p>
-                        Batch Level:{" "}
-                        {item.batchLevel ? item.batchLevel.toString() : "N/A"}
+                        User:{" "}
+                        <span>
+                          {" "}
+                          {item.user
+                            ? `${item.user.slice(0, 6)}...${item.user.slice(
+                                -4
+                              )}`
+                            : "N/A"}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -367,12 +537,12 @@ const handleApproveMintOpen = () => {
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div
             className="fixed inset-0 bg-black opacity-80"
-            onClick={openAddNft}
+            onClick={handleApproveQueueOpen}
           ></div>
           <div className="relative bg-[#201f1b] border-2 border-[#eda921] p-6 rounded-lg shadow-lg w-[80%] max-w-lg z-10">
             <button
               className="absolute top-4 right-4 text-red-600"
-              onClick={openAddNft}
+              onClick={handleApproveQueueOpen}
             >
               <p className="font-bold">X</p>
             </button>
@@ -419,9 +589,32 @@ const handleApproveMintOpen = () => {
       ) : (
         ""
       )}
+
+      {approveQueue ?(
+        <div onClick={handleApproveQueueOpen} className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black opacity-80" ></div>
+          <div className="relative items-center justify-center flex bg-[#201f1b] border-2 border-[#eda921] p-6 rounded-lg shadow-lg w-[80%] max-w-lg z-10">
+              <div className="w-[100%] flex items-center justify-center flex-col">                
+                <TbLockAccess className="border-2 text-[80px] rounded-full p-[20px] border-white"/> 
+                <p className="font-Agency text-[35px] mt-[10px]">Unlock NFT's</p>
+                <p className="text-center text-[18px] mt-[6px]">We need your permission to add your NFTs to the queue on your behalf!</p>
+                <p className="text-center text-[14px] mt-[6px]">You only need to do this once</p>
+                {address?(
+                  <button onClick={doApproveNft} className=" font-semibold rounded-3xl bg-[#eda921] px-[30px] py-[12px] my-[20px]">Approve NFT's</button>
+                ):(
+                 ""
+                )}
+               </div>
+           </div>
+         </div>
+      ):(
+        ""
+      )}
     </>
   );
 };
+
+
 
 export default SimpleSlider;
 

@@ -1,15 +1,51 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { doLogin } from "@/services/Web3Services";
 import Link from "next/link";
 import { useWallet } from "@/services/walletContext";
+import { MdLogout } from "react-icons/md";
+import { FaCopy } from "react-icons/fa";
 
 export default function Header() {
   const { address, setAddress } = useWallet();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [accountMenu, setAccountMenu] = useState<boolean>(false);
+  const menuRef = useRef<HTMLDivElement | null>(null); // Referência para o menu
+
+
+
+  const handleClickOutside = (event: MouseEvent) => {
+    // Verifica se o clique ocorreu fora do menu
+    if (menuRef.current && !(event.target instanceof Node) || !menuRef.current?.contains(event.target as Node)) {
+      setAccountMenu(false);
+    }
+  };
+
+  useEffect(() => {
+    // Adiciona o listener de clique
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      // Remove o listener ao desmontar o componente
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+
+
+  const copyToClipboard = (text:string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        alert('Texto copiado para a área de transferência!');
+      })
+      .catch((err) => {
+        console.error('Falha ao copiar o texto: ', err);
+      });
+  };
   
+
+
 
   const handleLogin = async () => {
     try {
@@ -22,6 +58,17 @@ export default function Header() {
       setMessage("");
     }
   };
+
+  const openAccountMenu = () => {
+    setAccountMenu(prevState => !prevState);
+  }
+
+  const handleDisconnect = () => {
+    localStorage.removeItem('userAddress');
+    setAddress(null);
+    setAccountMenu(false);
+  };
+
 
   useEffect(() => {
     const checkMetaMask = async () => {
@@ -80,13 +127,17 @@ export default function Header() {
   }, [address]);
 
   return (
-    <header className="bg-[#201f1b] border-b-4 border-[#eda921] p-1">
+    <header className="bg-[#201f1b] border-b-4 border-[#eda921] p-1 h-[70px] flex justify-center">
       <div className="container sm:max-w-[90%] m-auto flex items-center max-w-[98%]">
-        <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={70} height={70} className="max-w-[15%] max-h-[15%]" />
+        <a className="flex flex-row w-[50%] items-center cursor-pointer" href="/">
+        <Image src="/images/LogoBTCA-PNG.png" alt="Logo Btca" width={70} height={70} className="max-w-[60px] max-h-[60px]" />
         <p className="font-Agency text-[18px] sm:text-[22px]">BTCAiD</p>
+        </a>
         <div className="ml-auto flex items-center">
           {address ? (
-            <p className="text-[#eda921]">{`${address.slice(0, 6)}...${address.slice(-4)}`}</p>
+            <>
+            <button onClick={openAccountMenu} className="shadow-sm shadow-black px-[12px] py-[5px] cursor-pointer text-[#eda921]">{`${address.slice(0, 6)}...${address.slice(-4)}`}</button>
+            </>
           ) : (
             <button
               onClick={handleLogin}
@@ -96,6 +147,27 @@ export default function Header() {
             </button>
           )}
         </div>
+
+        {accountMenu ? (
+          <>
+          <div ref={menuRef} className="z-999 right-[20px] items-center justify-center  top-[40px] md:top-[70px] absolute w-[250px] bg-[#201f1b] shadow-lg shadow-black">
+            <div className="w-[95%] h-[95%] border-2 border-[#eda921] m-auto mt-[8px] flex flex-col justify-between ">
+              <div className="flex flex-row border-b-2 border-white items-center justify-center">
+                <p className="flex items-center justify-center p-[8px]">{`${address?.slice(0,6)}...${address?.slice(-4)}`}</p>
+                <button onClick={() => copyToClipboard(address?address : "")} className="copy-button">
+                  <FaCopy className="text-[15px]"></FaCopy>
+                </button>
+              </div>
+              <div onClick={handleDisconnect} className="cursor-pointer flex items-center justify-center p-[10px]">
+                <button className="text-red-600 flex items-center font-semibold">Disconnect</button>
+                <MdLogout className="ml-[5px] text-red-600"></MdLogout>
+              </div>
+            </div>
+          </div>
+          </>
+        ):(
+          ""
+        )}
       </div>
     </header>
   );
