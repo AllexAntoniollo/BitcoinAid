@@ -4,12 +4,14 @@ import donationAbi from "./Donation.abi.json";
 import queueAbi from "./Queue.abi.json";
 import collectionAbi from "./Collection.abi.json";
 import usdtAbi from "./Usdt.abi.json";
+import oracleAbi from "./Oracle.abi.json";
 const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID;
 const TOKEN_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_ADDRESS;
 const DONATION_ADDRESS = process.env.NEXT_PUBLIC_DONATION_ADDRESS;
 const QUEUE_ADDRESS = process.env.NEXT_PUBLIC_QUEUE_ADDRESS;
 const COLLECTION_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ADDRESS;
-const USDT_ADDRESS = process.env.NEXT_PUBLIC_USDT_ADDRESS
+const USDT_ADDRESS = process.env.NEXT_PUBLIC_USDT_ADDRESS;
+const ORACLE_ADDRESS = process.env.NEXT_PUBLIC_ORACLE_ADDRESS;
 import { nftQueue } from "./types";
 import { promises } from "dns";
 
@@ -297,5 +299,23 @@ export async function getNftUserByBatch(address:string, batch:number) {
   const get = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, signer);
 
   const result = await get.balanceOf(address,batch);
+  return result;
+}
+
+export async function getTokenPrice(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
+  const get = new ethers.Contract(ORACLE_ADDRESS ? ORACLE_ADDRESS : "", oracleAbi, provider);
+
+  const result = await get.returnPrice();
+  return result;
+}
+
+export async function getBalanceClaim(address:string){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const get = new ethers.Contract(DONATION_ADDRESS ? DONATION_ADDRESS : "", donationAbi, signer);
+
+  const result = await get.previewTotalValue(address);
   return result;
 }

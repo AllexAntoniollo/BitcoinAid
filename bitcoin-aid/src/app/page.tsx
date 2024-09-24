@@ -1,5 +1,14 @@
 "use client";
-import { donation, doLogin, allow, balance, approve, balanceDonationPool, userBalanceDonation, timeUntilNextWithDrawal, claim } from "@/services/Web3Services";
+import { donation,
+   doLogin, 
+   allow, balance, 
+   approve, balanceDonationPool, 
+   userBalanceDonation, 
+   timeUntilNextWithDrawal, 
+   claim, 
+   getTokenPrice,
+   getBalanceClaim,
+ } from "@/services/Web3Services";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import Error from "@/componentes/erro";
@@ -26,12 +35,23 @@ export default function Home() {
   const [time, setTime] = useState<number>(0);
   const [tempo, setTempo] = useState<number>(0);
   const [allowance, setAllowance] = useState<number>(0);
+  const [tokenPrice, setTokenPrice] = useState<number>(0)
+  const [balanceClaimed, setBalanceClaimed] = useState<number>(0)
 
   interface UserBalance {
     amount: ethers.BigNumberish;
     time: number;
     level: number;
     fifteen: boolean;
+}
+
+async function getPriceToken(){
+  const result = await getTokenPrice();
+  if(result){
+    setTokenPrice(Number(result)/1000000);
+  }else{
+    setTokenPrice(0);
+  }
 }
 
 const verifyAddress = (address:any) => {
@@ -47,6 +67,7 @@ async function approveToken(address:string,value:number) {
       if(result){
         await getAllowance(address, DONATION_ADDRESS);
         setLoading(false);
+        setAlert("Now you can make donations!");
       };
     }
   }catch(err){
@@ -66,7 +87,7 @@ async function getAllowance(address:string, contract:string){
       setAllowance(0);
     }
   }catch(err){
-    setError(`Erro ao conferir permissao ${address}`);
+    setError(`Error granting permission ${address}`);
   }
 }
   async function getTime(address:string) {
@@ -74,7 +95,7 @@ async function getAllowance(address:string, contract:string){
       const result = await timeUntilNextWithDrawal(address);
       setTime(Number(result));
     }catch{
-      setError(`Erro no getTime ${address}`);
+      setError(`Failed to start clock ${address}`);
     }
       
   }
@@ -83,9 +104,9 @@ async function getAllowance(address:string, contract:string){
     const Countdown = () => {
       if(time > 0){      
         setTempo(time-1)
-        console.log("chamou %d", Number(time));
       }
     }
+    Countdown();
   },[time]);
    
     
@@ -103,7 +124,7 @@ async function getAllowance(address:string, contract:string){
       finalBalance = intBalanceValue;
     }
     if (intValue > finalBalance) {
-      setError("Você não pode enviar essa quantia de token");
+      setError("You cannot send this amount of token");
       setDonateOpen(false);
     } else {
       setError("");
@@ -111,8 +132,11 @@ async function getAllowance(address:string, contract:string){
       setDonateOpen(false); // Limpa o erro se o valor for válido
       try{
         const result = await donation(Number(value),isFifteenDays);
-        if(result){
+        if(result && address){
           setLoading(false);
+          setAlert("Your donation has been successfully received");
+          getBalanceClaim(address);
+          getUserBalance(address);
         }
       }catch(err){
         setLoading(false);
@@ -147,7 +171,16 @@ async function getAllowance(address:string, contract:string){
         setError("");
       }
     } catch (err) {
-      setError(`Erro ao buscar o saldo ${address}`);
+      setError(`Error fetching balance ${address}`);
+    }
+  }
+
+  async function getBalanceClaimed(address:string){
+    try{
+      const result = await getBalanceClaim(address);
+      setBalanceClaimed(Number(result)/1000000);
+    }catch(err){
+      setBalanceClaimed(0);
     }
   }
 
@@ -162,7 +195,7 @@ async function getAllowance(address:string, contract:string){
         setUserBalanceValue(0); // Correção para lidar com endereços nulos
       }
     } catch (err) {
-      setError(`Erro ao buscar valor doado ${address}`);
+      setError(`Error fetching donated amount ${address}`);
     }
   }
 
@@ -188,6 +221,7 @@ async function getAllowance(address:string, contract:string){
         setAlert(`Your $${Number(userBalanceValue)/1000000} dollars in BTCA are now available in your wallet`);
         if(address){
         await getUserBalance(address);
+        await getBalanceClaimed(address);
         }
       }else{
         setLoading(false);
@@ -198,10 +232,12 @@ async function getAllowance(address:string, contract:string){
     }
   }
 
+
 useEffect(() => {
     async function fetchBalance() {
       if (address) {
         await getBalance(address);
+        await getBalanceClaimed(address);
       } else {
         setBalanceValue(0);
       }
@@ -212,12 +248,20 @@ useEffect(() => {
       if(DONATION_ADDRESS){
         getAllowance(address,DONATION_ADDRESS);
       }
+      getBalanceClaimed(address);
       getTime(address);
       getUserBalance(address);
     }else{
       setTime(0);
     }
   }, [address, userBalanceValue]);
+
+useEffect(()=> {
+  if(address){
+  getBalanceClaimed(address);
+  }
+  getPriceToken();
+})
 
   useEffect(() => {
     let start = Date.now(); // Obtém o tempo inicial
@@ -319,7 +363,7 @@ useEffect(() => {
             <p className="text-[#d79920] text-[13px] lg:text-[18px] font-semibold ">Donation Pool</p>
           </div>
           <div className="mt-[30px] lg:mt-[50px] w-[100%] md:w-[60%] border-l-2 border-[#282722] p-8 ">
-            <p className="font-semibold text-[35px] lg:text-[46px] w-full ">$0.0002380</p>
+            <p className="font-semibold text-[35px] lg:text-[46px] w-full ">${tokenPrice}</p>
             <p className="text-[#d79920] text-[13px] lg:text-[18px] font-semibold">1 BTCA Price</p>
           </div>
 
@@ -371,7 +415,7 @@ useEffect(() => {
                     <p className="text-[22px] font-semibold">---- BTCA</p>
                     </>
                   )}
-                  <p className="text-[16px] text-[#eda921]">$235.62</p>
+                  <p className="text-[16px] text-[#eda921]">${(Number(ethers.formatEther(balanceValue))*tokenPrice).toFixed(2)}</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
                     <>
                     <p className="text-[25px] mt-[14px]">Total Contributed</p>
@@ -403,8 +447,11 @@ useEffect(() => {
                 <div className="pt-[30px]">
                   <p className="text-[25px] font-semibold">CLAIMABLE REWARDS</p>
                   {userBalanceValue !== undefined && userBalanceValue !== null?(
-                     <p className="font-Agency text-center text-[45px] mt-[15px]">{Number(userBalanceValue)/1000000}<span className="text-[#d79920]">$</span></p>
-                  ) : (
+                     <>
+                     <p className="font-Agency text-center text-[45px] mt-[15px]">{balanceClaimed.toString()}<span className="text-[#d79920]">$</span></p>
+                     <p className="font-Agency text-center text-[20px] mt-[-15px]">{(balanceClaimed/tokenPrice).toFixed(2)} BTCA</p>
+                     </>
+                   ) : (
                     <p className="font-Agency text-center text-[45px] mt-[15px]">---- <span className="text-[#d79920]">$</span></p>
                   )}
                 </div>
@@ -446,8 +493,9 @@ useEffect(() => {
              <p className="text-center text-white text-[23px]">Contributing <span className="text-[#eda921]">BTCA</span></p>
               {address ? (
                 <>
-                <input onChange={(e) => setValue(e.target.value)} value={value} className="w-full m-w-[90%] p-2 bg-[#33322d] rounded-3xl mt-[20px] focus:outline-none focus:border-2 focus:border-[#eda921]" type="number" placeholder={ethers.formatEther(balanceValue)}></input>
+                <input onChange={(e) => setValue(e.target.value)} value={value} className="w-full m-w-[90%] p-2 bg-[#33322d] rounded-3xl mt-[20px] focus:outline-none focus:border-2 focus:border-[#eda921]" type="number" placeholder={(Number(ethers.formatEther(balanceValue))).toFixed(2)}></input>
                 <button onClick={handleMaxClick} className="text-[#eda921] ml-[10px] font-bold mt-[3px]">MAX</button>
+                <p className="flex items-end justify-end mt-[-23px] mr-[15px]">${(Number(value)*tokenPrice).toFixed(2)}</p>
                 <div className="w-full flex flex-col items-center mb-[15px] mt-[10px]">
                   {Number(allowance) >= Number(value) ? (
                      <button onClick={Donate} className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px] glossy_cta">Contribute</button>
@@ -483,7 +531,7 @@ useEffect(() => {
                 <div className="w-[100%] flex items-center justify-center flex-col">                
                   <TbLockAccess className="border-2 text-[80px] rounded-full p-[20px] border-white"/> 
                   <p className="font-Agency text-[35px] mt-[10px]">Unlock AiD Token</p>
-                  <p className="text-center text-[18px] mt-[6px]">We need your permission to move {value} AiD on your behalf</p>
+                  <p className="text-center text-[18px] mt-[6px]">We need your permission to move {balanceClaimed} AiD on your behalf</p>
                   <button onClick={()=>approveToken(address,Number(value))} className=" font-semibold rounded-3xl bg-[#eda921] px-[30px] py-[12px] my-[20px]">Approve {value} Aid</button>
                  </div>
                 </>
