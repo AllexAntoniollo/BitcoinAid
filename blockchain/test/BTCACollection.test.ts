@@ -94,7 +94,7 @@ describe("BTCA Collection", function () {
       const price = await getBatchPrice();
 
       const amount = 100;
-      const totalPrice = price * BigInt(amount) * BigInt(10 ** 6);
+      const totalPrice = price * BigInt(10 ** 6);
 
       await collection.mint(100);
 

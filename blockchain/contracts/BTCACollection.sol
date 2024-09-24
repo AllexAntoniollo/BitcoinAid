@@ -65,17 +65,8 @@ contract BTCACollection is ERC1155, Ownable, ReentrancyGuard {
     }
 
     function getBatchPrice(uint batch) public pure returns (uint256) {
-        if (batch <= 7) {
-            return 10 * (2 ** (batch - 1));
-        } else if (batch <= 14) {
-            return (960 * (150 ** (batch - 8))) / (100 ** (batch - 8));
-        } else if (batch <= 21) {
-            return (1366875 * (125 ** (batch - 15))) / (100 ** (batch - 15));
-        } else if (batch <= 29) {
-            return (5840241 * (112 ** (batch - 22))) / (100 ** (batch - 22));
-        } else {
-            return (13814675 * (107 ** (batch - 30))) / (100 ** (batch - 30));
-        }
+        uint effectiveBatch = batch % 10 == 0 ? 10 : batch % 10;
+        return 10 * (2 ** (effectiveBatch - 1));
     }
 
     function getCurrentBatchPrice() public view returns (uint256) {

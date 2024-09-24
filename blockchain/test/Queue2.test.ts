@@ -71,14 +71,15 @@ describe("Queue Distribution", function () {
 
     await token.mint(10000 * 10 ** 6);
     await token.approve(collectionAddress, 10000 * 10 ** 6);
-    await collection.mint(50);
+    await collection.mint(10);
     await collection.setApprovalForAll(queueAddress, true);
 
     await token.connect(otherAccount).mint(10000 * 10 ** 6);
     await token
       .connect(otherAccount)
-      .approve(collectionAddress, 10000 * 10 ** 6);
-    await collection.connect(otherAccount).mint(49);
+      .approve(collectionAddress, 100000 * 10 ** 6);
+    await collection.connect(otherAccount).mint(90);
+
     await collection
       .connect(otherAccount)
       .setApprovalForAll(queueAddress, true);
@@ -108,36 +109,55 @@ describe("Queue Distribution", function () {
       btca,
       multicall,
     } = await loadFixture(deployFixture);
-    await btca.transfer(queueAddress, ethers.parseUnits("100000", "ether"));
-    await queue.incrementBalance(ethers.parseUnits("100000", "ether"));
+    await btca.transfer(queueAddress, ethers.parseUnits("100000000", "ether"));
+    await queue.incrementBalance(ethers.parseUnits("990000000", "ether"));
 
     //FILA 1
-    await queue.connect(otherAccount).addToQueue(1);
-    await queue.connect(otherAccount).addToQueue(1);
-    await queue.connect(otherAccount).addToQueue(1);
-
-    await collection.mint(1);
-    //FILA 2
-
-    await collection.mint(100);
-    //Fila 3
-
-    await collection.mint(100);
-    //Fila 4
-    await queue.connect(otherAccount).addToQueue(1);
-
-    await multicall.depositNFT(1);
-    await multicall.depositNFT(1);
-    await multicall.depositNFT(1);
-
-    try {
-      await multicall.multiCall();
-    } catch (error: any) {
-      console.log(error.message);
+    for (let index = 0; index < 90; index++) {
+      await queue.connect(otherAccount).addToQueue(1);
     }
-    console.log(await queue.getQueueDetails(4));
+    await collection.connect(otherAccount).mint(100);
+    for (let index = 0; index < 30; index++) {
+      await queue.connect(otherAccount).addToQueue(2);
+    }
+    console.log("Size Queue2: ", (await queue.getQueueDetails(2)).length);
+
+    console.log("Size Queue3: ", (await queue.getQueueDetails(3)).length);
+    await collection.connect(otherAccount).mint(100);
+
+    for (let index = 0; index < 10; index++) {
+      await multicall.depositNFT(1);
+    }
+
+    for (let index = 1; index <= 11; index++) {
+      try {
+        await multicall.multiCall();
+      } catch (error: any) {
+        console.log(error.message);
+        await queue.connect(otherAccount).claim(index * 4, 2);
+      }
+    }
+    await queue.connect(otherAccount).claim(46, 2);
+    for (let index = 23; index <= 26; index++) {
+      try {
+        await multicall.multiCall();
+      } catch (error: any) {
+        console.log(error.message);
+        await queue.connect(otherAccount).claim(index * 4, 3);
+      }
+    }
+    console.log(await queue.getRequiredBalanceForNextFour());
+
+    await multicall.multiCall();
+    await multicall.multiCall();
+    await multicall.multiCall();
+
+    console.log("Size Queue2: ", (await queue.getQueueDetails(2)).length);
+    console.log("Size Queue3: ", (await queue.getQueueDetails(3)).length);
+    console.log("Size Queue4: ", (await queue.getQueueDetails(4)).length);
 
     console.log(
+      "Bot balance: ",
       ethers.formatEther(await btca.balanceOf(await multicall.getAddress()))
     );
   });
