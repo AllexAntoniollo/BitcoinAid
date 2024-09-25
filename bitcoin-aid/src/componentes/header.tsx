@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useWallet } from "@/services/walletContext";
 import { MdLogout } from "react-icons/md";
 import { FaCopy } from "react-icons/fa";
+import { PiUserSwitchLight } from "react-icons/pi";
 
 export default function Header() {
   const { address, setAddress } = useWallet();
@@ -13,6 +14,7 @@ export default function Header() {
   const [message, setMessage] = useState("");
   const [accountMenu, setAccountMenu] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement | null>(null); // Referência para o menu
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
 
 
@@ -64,9 +66,13 @@ export default function Header() {
   }
 
   const handleDisconnect = () => {
-    localStorage.removeItem('userAddress');
-    setAddress(null);
-    setAccountMenu(false);
+      setWalletAddress(null); // Limpa o estado da conta conectada
+  
+      // Remove todas as variáveis do localStorage relacionadas à conexão
+      localStorage.removeItem('userAddress'); // Adicione outras chaves conforme necessário
+  
+      // Recarrega a página
+      window.location.reload();
   };
 
 
@@ -120,6 +126,60 @@ export default function Header() {
     };
   }, []);
 
+  
+    const connectWallet = async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          setWalletAddress(accounts[0]); // Conecta a carteira
+        } catch (error) {
+          console.error("Erro ao conectar a carteira:", error);
+        }
+      } else {
+        console.error("MetaMask não está instalada");
+      }
+    };
+  
+    const switchAccount = async () => {
+      if (window.ethereum) {
+        try {
+          // Isso solicita que o usuário escolha uma conta
+          const permissions = await window.ethereum.request({
+            method: 'wallet_requestPermissions',
+            params: [{ eth_accounts: {} }]
+          });
+    
+          // Verifica as contas novamente após a permissão ser solicitada
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          setWalletAddress(accounts[0]); // Atualiza a conta conectada
+        } catch (error) {
+          console.error("Erro ao trocar de conta:", error);
+        }
+      }
+    };
+  
+    useEffect(() => {
+      // Escuta por mudanças de conta
+      if (window.ethereum) {
+        window.ethereum.on('accountsChanged', (accounts: string[]) => {
+          if (accounts.length > 0) {
+            setAddress(accounts[0]); // Atualiza a conta ao mudar
+          } else {
+            setAddress(null); // Caso não haja contas conectadas
+          }
+        });
+      }
+  
+      return () => {
+        // Remove o listener quando o componente é desmontado
+        if (window.ethereum) {
+          window.ethereum.removeListener('accountsChanged', () => {});
+        }
+      };
+    }, []);
+
+
+
   useEffect(() => {
     if (address) {
       localStorage.setItem('userAddress', address);
@@ -158,12 +218,15 @@ export default function Header() {
                   <FaCopy className="text-[15px]"></FaCopy>
                 </button>
               </div>
+              <button onClick={switchAccount} className="w-[100%] flex items-center justify-center border-b-[1px] p-[8px] border-white">Switch Account <PiUserSwitchLight className="text-white font-[25px] ml-[5px]"/></button>
               <div onClick={handleDisconnect} className="cursor-pointer flex items-center justify-center p-[10px]">
+
                 <button className="text-red-600 flex items-center font-semibold">Disconnect</button>
                 <MdLogout className="ml-[5px] text-red-600"></MdLogout>
               </div>
             </div>
           </div>
+          
           </>
         ):(
           ""

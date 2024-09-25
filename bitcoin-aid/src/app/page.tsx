@@ -354,7 +354,7 @@ useEffect(() => {
         <div className="container min-h-screen max-w-[98%] lg:max-w-[90%] m-auto flex flex-wrap items-center p-[20px] lg:p-[60px]">
         
           <p className="leading-tight font-Agency text-[70px] sm:text-[90px] font-normal w-full">Bitcoin AiD Protocol</p>
-          <div className="mt-[50px] w-full lg:max-w-[40%] max-w-[100%] border-l-2 border-[#282722] p-8 ">
+          <div className="mt-[50px] w-full lg:max-w-[55%] max-w-[100%] border-l-2 border-[#282722] p-8 ">
             {poolBalanceValue ? (
               <p className="font-semibold text-[35px] lg:text-[46px] w-full">{ethers.formatEther(poolBalanceValue)}<span className="text-[#d79920]">BTCA</span></p>
             ) : (
@@ -362,7 +362,7 @@ useEffect(() => {
             )}
             <p className="text-[#d79920] text-[13px] lg:text-[18px] font-semibold ">Donation Pool</p>
           </div>
-          <div className="mt-[30px] lg:mt-[50px] w-[100%] md:w-[60%] border-l-2 border-[#282722] p-8 ">
+          <div className="mt-[30px] lg:mt-[50px] w-[100%] md:w-[45%] border-l-2 border-[#282722] p-8 ">
             <p className="font-semibold text-[35px] lg:text-[46px] w-full ">${tokenPrice}</p>
             <p className="text-[#d79920] text-[13px] lg:text-[18px] font-semibold">1 BTCA Price</p>
           </div>
