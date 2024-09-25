@@ -16,6 +16,7 @@ library Donation {
         uint startedTimestamp;
         uint poolPaymentIndex;
         bool fifteenDays;
+        uint totalClaimed;
     }
 }
 
@@ -114,7 +115,7 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     }
 
     function claimDonation() external nonReentrant {
-        Donation.UserDonation memory userDonation = users[msg.sender];
+        Donation.UserDonation storage userDonation = users[msg.sender];
         uint timeElapsed = block.timestamp - userDonation.startedTimestamp;
 
         if (userDonation.fifteenDays) {
@@ -156,6 +157,8 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         token.safeTransfer(msg.sender, userAmount);
         totalPaidToUsers += userAmount;
 
+        userDonation.totalClaimed += userAmount;
+
         emit UserClaimed(msg.sender, totalTokensToSend);
     }
 
@@ -163,7 +166,6 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         address _user
     ) external view returns (Donation.UserDonation memory) {
         Donation.UserDonation memory userDonation = users[_user];
-        userDonation.balance = calculateTotalValue(_user);
         return userDonation;
     }
 

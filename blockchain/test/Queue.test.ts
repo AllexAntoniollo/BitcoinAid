@@ -122,7 +122,6 @@ describe("Queue Distribution", function () {
     await queue.connect(otherAccount).addToQueue(1);
     await queue.addToQueue(1);
     await queue.connect(otherAccount).addToQueue(1);
-    expect(await queue.queueSizeByBatch(1)).to.be.equal(6);
     const balance = await btca.balanceOf(owner.address);
 
     await queue.claim(1, 1);
@@ -131,7 +130,6 @@ describe("Queue Distribution", function () {
       balance + ethers.parseUnits("99", "ether") - 10n,
       balance + ethers.parseUnits("99", "ether") + 10n
     );
-    expect(await queue.queueSizeByBatch(1)).to.be.equal(2);
     expect(await queue.tokensToWithdraw(otherAccount.address)).to.be.equal(
       ethers.parseUnits("33.333333333333333333", "ether")
     );
@@ -154,7 +152,6 @@ describe("Queue Distribution", function () {
     await queue.connect(otherAccount).addToQueue(1);
     await queue.connect(otherAccount).addToQueue(1);
 
-    expect(await queue.queueSizeByBatch(1)).to.be.equal(4);
     const balance = await btca.balanceOf(owner.address);
 
     await queue.claim(1, 1);
@@ -163,7 +160,6 @@ describe("Queue Distribution", function () {
       balance + ethers.parseUnits("66", "ether") - 10n,
       balance + ethers.parseUnits("66", "ether") + 10n
     );
-    expect(await queue.queueSizeByBatch(1)).to.be.equal(0);
     expect(await queue.tokensToWithdraw(otherAccount.address)).to.be.equal(
       ethers.parseUnits("66.666666666666666666", "ether")
     );
@@ -174,7 +170,6 @@ describe("Queue Distribution", function () {
     await queue.connect(otherAccount).addToQueue(1);
     await queue.connect(otherAccount).addToQueue(1);
 
-    expect(await queue.queueSizeByBatch(1)).to.be.equal(4);
     const balance2 = await btca.balanceOf(owner.address);
 
     await queue.claim(5, 1);
@@ -183,7 +178,6 @@ describe("Queue Distribution", function () {
       balance2 + ethers.parseUnits("66", "ether") - 10n,
       balance2 + ethers.parseUnits("66", "ether") + 10n
     );
-    expect(await queue.queueSizeByBatch(1)).to.be.equal(0);
     expect(await queue.tokensToWithdraw(otherAccount.address)).to.be.equal(
       ethers.parseUnits("66.666666666666666666", "ether") * 2n
     );
@@ -212,7 +206,6 @@ describe("Queue Distribution", function () {
       await queue.connect(otherAccount).addToQueue(1);
     }
     await queue.connect(otherAccount).claim(28, 1);
-    expect(await queue.queueSizeByBatch(1)).to.be.equal(22);
     expect(await btca.balanceOf(otherAccount.address)).to.be.equal(
       ethers.parseUnits("131.999999999999999999", "ether")
     );

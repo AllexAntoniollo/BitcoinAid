@@ -41,7 +41,6 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
         uint256 prev;
         uint256 index;
         uint batchLevel;
-        uint dollarsClaimed;
     }
 
     uint public totalNFTsInQueue;
@@ -50,6 +49,8 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
     mapping(uint256 => uint256) public tailByBatch;
     mapping(uint256 => uint256) private queueSizeByBatch;
     mapping(uint256 => mapping(uint256 => QueueEntry)) public queueByBatch;
+    mapping(address => uint256) public totalClaimed;
+
     uint public lastUnpaidQueue;
 
     uint public balanceFree;
@@ -98,8 +99,7 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
             next: 0,
             prev: tailByBatch[batchLevel],
             index: currentIndex,
-            batchLevel: batchLevel,
-            dollarsClaimed: 0
+            batchLevel: batchLevel
         });
 
         if (queueSizeByBatch[batchLevel] == 0) {
@@ -132,6 +132,9 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
         uint last = lastUnpaidQueue;
         while (queueSizeByBatch[last] == 0 && last <= 100) {
             ++last;
+        }
+        if (last == 101) {
+            return BTCACollection.getCurrentBatch();
         }
         return last;
     }
@@ -323,7 +326,6 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
         require(totalNFTsInQueue >= 4, "At least 4 NFTs required");
 
         QueueEntry[] memory result = new QueueEntry[](4);
-        uint256 tokenPrice = uniswapOracle.returnPrice();
         uint256 counter = 0;
         uint256 currentBatch = lastUnpaidQueue;
 
@@ -337,11 +339,7 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
 
             uint256 currentHead = headByBatch[currentBatch];
             if (currentHead != 0 && counter < 4) {
-                result[counter] = processPaymentView(
-                    currentHead,
-                    tokenPrice,
-                    currentBatch
-                );
+                result[counter] = processPaymentView(currentHead, currentBatch);
                 counter++;
 
                 if (
@@ -351,7 +349,6 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
                     currentHead = queueByBatch[currentBatch][currentHead].next;
                     result[counter] = processPaymentView(
                         currentHead,
-                        tokenPrice,
                         currentBatch
                     );
                     counter++;
@@ -360,11 +357,7 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
 
             uint256 currentTail = tailByBatch[currentBatch];
             if (currentTail != 0 && currentTail != currentHead && counter < 4) {
-                result[counter] = processPaymentView(
-                    currentTail,
-                    tokenPrice,
-                    currentBatch
-                );
+                result[counter] = processPaymentView(currentTail, currentBatch);
                 counter++;
 
                 if (
@@ -375,7 +368,6 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
                     currentTail = queueByBatch[currentBatch][currentTail].prev;
                     result[counter] = processPaymentView(
                         currentTail,
-                        tokenPrice,
                         currentBatch
                     );
                     counter++;
@@ -424,8 +416,7 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
                 uint256 batchPrice = BTCACollection.getBatchPrice(
                     entry.batchLevel
                 ) * 10 ** 6;
-                uint256 maxClaim = (batchPrice * 3) - entry.dollarsClaimed;
-                uint256 totalToClaim = (maxClaim * 1e18) / tokenPrice;
+                uint256 totalToClaim = (batchPrice * 3 * 1e18) / tokenPrice;
 
                 totalRequiredBalance += totalToClaim;
 
@@ -446,7 +437,7 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
         QueueEntry storage entry = queueByBatch[lastUnpaidQueue][current];
         uint256 batchPrice = BTCACollection.getBatchPrice(entry.batchLevel) *
             10 ** 6;
-        uint256 maxClaim = (batchPrice * 3) - entry.dollarsClaimed;
+        uint256 maxClaim = (batchPrice * 3);
 
         uint256 totalToClaim = (maxClaim * 1e18) / tokenPrice;
 
@@ -458,40 +449,29 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
 
         tokensToWithdraw[entry.user] += payableAmount;
 
+        totalClaimed[entry.user] += maxClaim;
+
         emit PaymentProcessed(entry.user, payableAmount, tokenPrice);
 
         if (payableAmount == totalToClaim) {
             removeFromQueue(current, lastUnpaidQueue);
         }
-
-        entry.dollarsClaimed += (payableAmount * tokenPrice) / 1e18;
     }
 
     function processPaymentView(
         uint256 current,
-        uint256 tokenPrice,
         uint lastUnpaid
     ) internal view returns (QueueEntry memory entryView) {
         QueueEntry storage entry = queueByBatch[lastUnpaid][current];
-        uint256 batchPrice = BTCACollection.getBatchPrice(entry.batchLevel) *
-            10 ** 6;
-        uint256 maxClaim = (batchPrice * 3) - entry.dollarsClaimed;
-        uint256 totalToClaim = (maxClaim * 1e18) / tokenPrice;
 
-        uint256 payableAmount = totalToClaim > balanceFree
-            ? balanceFree
-            : totalToClaim;
-
-        entryView = QueueEntry({
-            user: entry.user,
-            next: entry.next,
-            prev: entry.prev,
-            index: current,
-            batchLevel: entry.batchLevel,
-            dollarsClaimed: entry.dollarsClaimed +
-                (payableAmount * tokenPrice) /
-                1e18
-        });
+        return
+            entryView = QueueEntry({
+                user: entry.user,
+                next: entry.next,
+                prev: entry.prev,
+                index: current,
+                batchLevel: entry.batchLevel
+            });
     }
 
     function removeFromQueue(uint256 index, uint queueId) internal {

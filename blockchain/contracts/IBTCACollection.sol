@@ -7,4 +7,6 @@ interface IBTCACollection is IERC1155 {
     function getCurrentBatch() external view returns (uint);
 
     function getBatchPrice(uint batch) external view returns (uint256);
+
+    function mint(uint256 amount) external;
 }
