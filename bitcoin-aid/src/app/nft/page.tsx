@@ -292,6 +292,7 @@ const handleApproveMintOpen = () => {
     const fetchData = async () => {
       await fetchQueue();
       await nextFour();
+    setAlert("teste");
     };
   
     fetchData();
@@ -393,14 +394,14 @@ const handleApproveMintOpen = () => {
           <p className="mx-auto text-[20px] mt-[10px] font-semibold">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."}</p>
           {approveToMint ?(
               <button
-              onClick={goApproveMint}
+              onClick={buyNft}
               className=" hover:bg-[#a47618] mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px] glossy_cta"
               >
                 Buy Nft
               </button>
           ):(
             <button
-            onClick={buyNft}
+            onClick={goApproveMint}
             className=" hover:bg-[#a47618] mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px] glossy_cta"
             >
             Buy Nft
