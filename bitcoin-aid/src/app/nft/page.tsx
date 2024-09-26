@@ -120,13 +120,19 @@ const SimpleSlider = () => {
     let nextPaidArray = [];
     setBalance(balance);
     for(let i = 0; i < Math.min(result.length, 4); i++){
-      let start = 10;
+      let willReceived = 0;
       const lote = result[i].batchLevel;
-      for(let j = 1; j < lote; j++){
-        start = start*2;
+      const batchDecimal = Number(lote) % 10;
+      if(batchDecimal == 0){
+        valueNextFour.push(5120*3);
+      }else{
+        willReceived = 10;
+        for(let j = 1; j < batchDecimal; j++){
+          willReceived = willReceived*2;
+        }
+        willReceived = willReceived*3;
       }
-      const calculatedValue = start*3;
-      valueNextFour.push(calculatedValue);
+      valueNextFour.push(willReceived);
     }
     for(let k = 0; k<4; k++){
       balance -= valueNextFour[k]; 
@@ -167,13 +173,23 @@ const SimpleSlider = () => {
   
 
 function youWillRecieved(value:number){
-    let start = 10;
-    let recieved;
-    for(let j = 1; j < value; j++){
-      start = start*2;
+    const batchDecimal = value % 10;
+    let willReceived = 0;
+    if(value!=0){
+      if (batchDecimal == 0){
+        willReceived = 5120*3;
+      }else{
+       willReceived = 10;
+        for(let j = 1; j < batchDecimal; j++){
+          willReceived = willReceived*2;
+        }
+        willReceived = willReceived*3;
+      }
+    }else{
+      willReceived = 0;
     }
-    const calculatedValue = start*3;
-    return calculatedValue;
+  
+    return willReceived;
   }
 
 
@@ -194,7 +210,7 @@ function youWillRecieved(value:number){
   }
 
   const doApproveMint = () => {
-    const priceInWei:number = Number(nftCurrentPrice) * Number(Math.pow(10, 18));
+    const priceInWei:number = Number(nftCurrentPrice) * Number(Math.pow(10, 6));
     console.log(priceInWei);
     if(address){
       approveToMintNft(priceInWei);
@@ -205,6 +221,7 @@ function youWillRecieved(value:number){
 
   const handleSubmit = async () => {
     if(Number(inputValue==0)){
+      setNftAddOpen(false)
       setError("You must enter a valid batch");
     }else{
       if(address){
@@ -292,7 +309,6 @@ const handleApproveMintOpen = () => {
     const fetchData = async () => {
       await fetchQueue();
       await nextFour();
-    setAlert("teste");
     };
   
     fetchData();
@@ -383,7 +399,7 @@ const handleApproveMintOpen = () => {
         </p>
         <div className=" mx-auto lg:w-[35%] w-[90%] bg-[#26251f35] rounded-3xl mb-[10px] flex flex-col py-[30px] shadow-lg glossy">
           <div className="glossy-content flex items-center justify-center flex-col">
-          <p className=" mx-auto text-[30px] mb-[8px]">{currentBatch ? `Buy NFT - Lote #${currentBatch}` : 'Loading...'}</p>
+          <p className=" mx-auto text-[30px] mb-[8px]">{currentBatch ? `Buy NFT - Batch #${currentBatch}` : 'Loading...'}</p>
           <Image
             src="/images/NFTSATOSHI.png"
             alt="NFT"
@@ -447,7 +463,7 @@ const handleApproveMintOpen = () => {
             <div key={index} className="mb-2 h-full">
               
               <h2 className="text-xl font-semibold mb-[5px]">
-                Fila {index + 1}
+                Queue {index + 1}
               </h2>
               <Slider 
                 {...settings(dataSet.length)}
@@ -458,7 +474,7 @@ const handleApproveMintOpen = () => {
                     <div className="mt-[50px] nftUserPiscando p-2 lg:p-4 caixa3d transform transition-transform">
                       <div className="">
                       <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
-                        <h3>Posição da Fila: {itemIndex + 1}</h3>
+                        <h3>Position in the queue: {itemIndex + 1}</h3>
                       </div>
                       <p>
                         User:{" "}
@@ -481,7 +497,7 @@ const handleApproveMintOpen = () => {
                     <div className="nftPaidPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d h-full flex flex-col justify-between">
                       <div className="">
                       <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
-                        <h3>Posição da Fila: {itemIndex + 1}</h3>
+                        <h3>Position in the queue: {itemIndex + 1}</h3>
                       </div>
                       <p>
                         User:{" "}
@@ -507,7 +523,7 @@ const handleApproveMintOpen = () => {
                     <div key={itemIndex} className="relative">
                     <div className="nftPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d">
                       <div className="">
-                        <h3>Posição da Fila: {itemIndex + 1}</h3>
+                        <h3>Position in the queue: {itemIndex + 1}</h3>
                       </div>
                       <p>
                         User:{" "}
