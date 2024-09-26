@@ -14,11 +14,13 @@ contract ReserveBTCA is Ownable {
     uint256 public virtualBalance;
 
     address public collection;
+    address public claimWallet;
 
     event BalanceIncremented(uint256 amount);
     event Swapped(uint256 usdAmount, uint256 btcaAmount);
     event ClaimedBTCA(address indexed user, uint256 amount);
     event CollectionSet(address indexed collectionAddress);
+    event ClaimWalletSet(address indexed newClaimWallet);
 
     constructor(
         IERC20 _usdToken,
@@ -27,6 +29,15 @@ contract ReserveBTCA is Ownable {
     ) Ownable(initialOwner) {
         usdToken = _usdToken;
         btcaToken = _btcaToken;
+    }
+
+    function setClaimWallet(address _claimWallet) external onlyOwner {
+        require(
+            _claimWallet != address(0),
+            "Claim wallet cannot be zero address"
+        );
+        claimWallet = _claimWallet;
+        emit ClaimWalletSet(_claimWallet);
     }
 
     function setCollection(address _collection) external onlyOwner {
@@ -51,9 +62,17 @@ contract ReserveBTCA is Ownable {
         // emit Swapped(usdAmount, btcaAmount);
     }
 
-    function collectBTCA() external onlyOwner {
+    function collectBTCA() external onlyAuthorized {
         require(btcaToken.balanceOf(address(this)) > 0, "Insufficient funds");
         btcaToken.safeTransfer(msg.sender, btcaToken.balanceOf(address(this)));
+    }
+
+    modifier onlyAuthorized() {
+        require(
+            msg.sender == owner() || msg.sender == claimWallet,
+            "Only the owner or authorized wallet can call this function."
+        );
+        _;
     }
 
     modifier onlyCollection() {

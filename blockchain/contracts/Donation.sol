@@ -39,6 +39,7 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     uint256 public totalDistributedForUsers;
     uint256 public totalForDevelopment;
     uint256 public totalPaidToUsers;
+    uint public nextPoolFilling;
 
     mapping(address => Donation.UserDonation) private users;
 
@@ -85,6 +86,7 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     }
 
     function donate(uint128 amount, bool fifteenDays) external nonReentrant {
+        uint amountBurned = (amount * 99) / 100;
         uint amountUsdt = (uniswapOracle.returnPrice() * amount) / 1e18;
 
         require(amountUsdt >= 10e6, "Amount must be greater than 10 dollars");
@@ -102,16 +104,21 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
             : 3;
 
         token.safeTransferFrom(msg.sender, address(this), amount);
-
-        uint256 burnedAmount = amount / 5;
+        nextPoolFilling += amountBurned / 2;
+        uint256 burnedAmount = amountBurned / 5;
         token.burn(burnedAmount);
         totalBurned += burnedAmount;
 
-        uint256 distributedAmount = (amount * 3) / 10;
+        uint256 distributedAmount = (amountBurned * 3) / 10;
         totalDistributedForUsers += distributedAmount;
         token.safeTransfer(address(queueDistribution), distributedAmount);
         queueDistribution.incrementBalance((distributedAmount * 99) / 100);
-        emit UserDonated(msg.sender, amount);
+        emit UserDonated(msg.sender, amountBurned);
+    }
+
+    function refillPool() external onlyOwner {
+        distributionBalance += nextPoolFilling;
+        nextPoolFilling = 0;
     }
 
     function claimDonation() external nonReentrant {
@@ -157,7 +164,7 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         token.safeTransfer(msg.sender, userAmount);
         totalPaidToUsers += userAmount;
 
-        userDonation.totalClaimed += userAmount;
+        userDonation.totalClaimed += totalValueInUSD;
 
         emit UserClaimed(msg.sender, totalTokensToSend);
     }
@@ -187,13 +194,13 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
             }
         } else {
             if (userDonation.poolPaymentIndex == 0) {
-                percentage = 100;
+                percentage = 130;
             } else if (userDonation.poolPaymentIndex == 1) {
-                percentage = 80;
+                percentage = 110;
             } else if (userDonation.poolPaymentIndex == 2) {
-                percentage = 60;
+                percentage = 90;
             } else if (userDonation.poolPaymentIndex == 3) {
-                percentage = 40;
+                percentage = 70;
             }
         }
 
@@ -224,13 +231,13 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         } else {
             if (timeElapsed >= limitPeriod * 2) {
                 if (userDonation.poolPaymentIndex == 0) {
-                    percentage = 100;
+                    percentage = 130;
                 } else if (userDonation.poolPaymentIndex == 1) {
-                    percentage = 80;
+                    percentage = 110;
                 } else if (userDonation.poolPaymentIndex == 2) {
-                    percentage = 60;
+                    percentage = 90;
                 } else if (userDonation.poolPaymentIndex == 3) {
-                    percentage = 40;
+                    percentage = 70;
                 }
             }
         }

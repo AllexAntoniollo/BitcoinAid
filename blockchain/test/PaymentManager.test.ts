@@ -88,6 +88,32 @@ describe("Payment Manager", function () {
       await paymentManager.getUserBalance(otherAccount.address)
     ).to.be.equal(0);
   });
+  it("Should increment balance and claim another address", async function () {
+    const {
+      owner,
+      otherAccount,
+
+      token,
+      paymentManager,
+      paymentManagerAddress,
+    } = await loadFixture(deployFixture);
+    await paymentManager.setDonation(owner.address);
+    await token.transfer(paymentManagerAddress, 101.010101 * 10 ** 6);
+    await paymentManager.incrementBalance(100 * 10 ** 6);
+
+    await paymentManager.updateRecipientPercentage(
+      "0x1111111111111111111111111111111111111111",
+      0
+    );
+    expect(await paymentManager.totalPercentage()).to.be.equal(800000);
+    await paymentManager.addRecipient(otherAccount.address, 200000);
+    expect(await paymentManager.totalPercentage()).to.be.equal(1000000);
+    expect(
+      await paymentManager.recipientsPercentage(otherAccount.address)
+    ).to.be.equal(200000);
+
+    await paymentManager.connect(otherAccount).claim();
+  });
   it("Should not increment ", async function () {
     const {
       owner,

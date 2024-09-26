@@ -179,13 +179,15 @@ describe("Donation", function () {
     );
     const oldBalance2 = await token.balanceOf(owner.address);
     const distributionBalance = await donation.distributionBalance();
+
     await donation.claimDonation();
     expect(await donation.distributionBalance()).to.be.equal(
-      distributionBalance - ethers.parseUnits("140", "ether")
+      distributionBalance - ethers.parseUnits("170", "ether")
     );
     expect(await token.balanceOf(owner.address)).to.be.equal(
-      oldBalance2 + ethers.parseUnits("131.67", "ether")
+      oldBalance2 + ethers.parseUnits("159.885", "ether")
     );
+    console.log(await donation.nextPoolFilling());
   });
   it("Should claim donation funds lvl 2", async function () {
     const {
@@ -227,10 +229,10 @@ describe("Donation", function () {
     const distributionBalance2 = await donation.distributionBalance();
     await donation.claimDonation();
     expect(await donation.distributionBalance()).to.be.equal(
-      distributionBalance2 - ethers.parseUnits("160", "ether")
+      distributionBalance2 - ethers.parseUnits("190", "ether")
     );
     expect(await token.balanceOf(owner.address)).to.be.equal(
-      oldBalance2 + ethers.parseUnits("150.48", "ether")
+      oldBalance2 + ethers.parseUnits("178.695", "ether")
     );
   });
   it("Should claim donation funds lvl 1", async function () {
@@ -281,10 +283,10 @@ describe("Donation", function () {
     const distributionBalance2 = await donation.distributionBalance();
     await donation.claimDonation();
     expect(await donation.distributionBalance()).to.be.equal(
-      distributionBalance2 - ethers.parseUnits("180", "ether")
+      distributionBalance2 - ethers.parseUnits("210", "ether")
     );
     expect(await token.balanceOf(owner.address)).to.be.equal(
-      oldBalance2 + ethers.parseUnits("169.29", "ether")
+      oldBalance2 + ethers.parseUnits("197.505", "ether")
     );
   });
   it("Should claim donation funds lvl 0", async function () {
@@ -327,10 +329,10 @@ describe("Donation", function () {
     const distributionBalance2 = await donation.distributionBalance();
     await donation.claimDonation();
     expect(await donation.distributionBalance()).to.be.equal(
-      distributionBalance2 - ethers.parseUnits("200", "ether")
+      distributionBalance2 - ethers.parseUnits("230", "ether")
     );
     expect(await token.balanceOf(owner.address)).to.be.equal(
-      oldBalance2 + ethers.parseUnits("188.1", "ether")
+      oldBalance2 + ethers.parseUnits("216.315", "ether")
     );
   });
   it("Should not claim donation tokens locked (15)", async function () {

@@ -297,8 +297,6 @@ describe("Queue Distribution", function () {
     await collection.mint(100);
     await queue.connect(otherAccount).addToQueue(1);
 
-    console.log(await queue.getNextUsersToPaid());
-
     console.log(await queue.getRequiredBalanceForNextFour());
   });
 });
