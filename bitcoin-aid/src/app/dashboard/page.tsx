@@ -94,11 +94,14 @@ export default function Dashboard() {
             <p className="md:text-[80px] text-[50px] font-bold text-[#3a6e01]">
               {String(donationReward / BigInt(10 ** 6))}$
             </p>
+            <p className="md:text-[22px] text-[18px] font-semibold text-white mt-[-10px]">
+              Donation Rewards
+            </p>
             <p className="md:text-[80px] text-[50px] font-bold text-[#3a6e01]">
               {String(nftReward / BigInt(10 ** 6))}$
             </p>
 
-            <p className="md:text-[22px] text-[18px] font-semibold text-white md:mt-[-25px] mt-[-10px]">
+            <p className="md:text-[22px] text-[18px] font-semibold text-white">
               Nft Rewards
             </p>
           </div>
@@ -119,14 +122,14 @@ export default function Dashboard() {
 
               <div className="mt-[15px]">
                 <p className="font-semibold text-[22px]">You Have</p>
-                <div className="max-h-40">
+                <div className="max-h-40 overflow-auto w-[100%] flex flex-col">
                   {nftByBatch?.map((value, index) =>
                     value > 0 ? (
                       <p key={index} className="p-[8px]">
                         Batch #{index + 1}: {value.toString()} NFT's
                       </p>
                     ) : (
-                      ""
+                      null
                     )
                   )}
                 </div>
