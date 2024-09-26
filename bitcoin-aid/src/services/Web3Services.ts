@@ -425,6 +425,7 @@ export async function getTotalDonationReward() {
 
   const result = await contract.getUser(signer.address);
   return result.totalClaimed;
+
 }
 export async function getTotalNftReward() {
   const provider = await getProvider();
@@ -477,4 +478,15 @@ export async function totalMintedOnBatch() {
 
   const result = await get.totalMintedInBatch();
   return result;
+}
+
+export async function allowanceUsdt(address:string){
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+
+  const get = new ethers.Contract(USDT_ADDRESS ? USDT_ADDRESS : "", usdtAbi, provider);
+
+  const result = await get.allowance(address, COLLECTION_ADDRESS);
+
+  return (Number(result))/10**6
 }

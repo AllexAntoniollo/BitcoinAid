@@ -22,6 +22,8 @@ import {
   haveNft,
   claimQueue,
   totalMintedOnBatch,
+  getTokenPrice,
+  allowanceUsdt,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
 import { blockData } from "@/services/types";
@@ -42,11 +44,33 @@ const SimpleSlider = () => {
   const [error, setError] = useState("");
   const [alert, setAlert] = useState("");
   const { address, setAddress } = useWallet();
-  const [approveToMint, setApproveToMint] = useState<boolean>(false);
+  const [approveToMint, setApproveToMint] = useState<number>(0);
   const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false);
   const [approveQueue, setApproveQueue] = useState<boolean>(false);
   const [minted, setMinted] = useState<number>(0);
   const [newQueue, setNewQueue] = useState<blockData[][]>([]);
+  const [priceToken, setPriceToken] = useState<number>(0);
+
+
+  async function verificaApprove(){
+    if(address){
+      const result = await allowanceUsdt(address);
+      if(result >= nftCurrentPrice){
+        buyNft();
+      }else{
+        goApproveMint();
+      }
+    }
+    
+  }
+
+  function goApproveMint(){
+    setApproveToMintOpen(true);
+  }
+
+  function handleApproveMintOpen(){
+    setApproveToMintOpen(prevValue => !prevValue);
+  }
 
   async function doClaimQueue(index: number, queueId: number) {
     if (address) {
@@ -96,7 +120,6 @@ const SimpleSlider = () => {
   async function doApproveNft() {
     setLoading(true);
     setApproveQueue(false);
-    setApproveToMint(false);
     try {
       if (address) {
         await approveToAll();
@@ -130,7 +153,6 @@ const SimpleSlider = () => {
       if (result) {
         setLoading(false);
         setAlert("Now you can buy NFT's");
-        setApproveToMint(true);
       }
     } catch (err: any) {
       setLoading(false);
@@ -178,12 +200,7 @@ const SimpleSlider = () => {
     }
   };
 
-  const goApproveMint = () => {
-    setApproveToMintOpen(true);
-  };
-  const handleApproveMintOpen = () => {
-    setApproveToMintOpen((prevState) => !prevState);
-  };
+
   const buyNft = async () => {
     try {
       setLoading(true);
@@ -321,20 +338,25 @@ function getPaymentAmountForQueue(queueIndex: number):number {
     }
     valueNft = start*3;
   }
-  return (valueNft)*10**18;
+  return valueNft;
 }
 
 async function veSePaga(queue: nftQueue[][]) {
   let balanceToPaidNfts = Number(await balanceFree());
-
+  balanceToPaidNfts = (balanceToPaidNfts / 10 ** 18) / Number(priceToken);
   let i = 0; // Índice da fila atual
   let first = true; // Define se é o primeiro ou o último elemento da fila atual
+
+  console.log("cotação token %d", priceToken);
 
   // Matriz que vai armazenar os resultados com booleano (true/false)
   const queueDataNew: blockData[][] = Array.from({ length: queue.length }, () => []);
 
+  // Variável de controle para indicar quando o saldo acabou
+  let hasBalance = true;
+
   // Loop principal até o saldo acabar ou todos os elementos serem processados
-  while (balanceToPaidNfts > 0 && queue.some((fila) => fila.length > 0)) {
+  while (queue.some((fila) => fila.length > 0)) {
     // Verifica se ainda existem elementos na fila atual
     if (queue[i] && queue[i].length > 0) {
       let element;
@@ -346,39 +368,48 @@ async function veSePaga(queue: nftQueue[][]) {
         element = queue[i][queue[i].length - 1]; // Último elemento da fila
       }
 
-      // Recupera o valor a ser deduzido com base na fila atual
-      const paymentAmount = getPaymentAmountForQueue(i+1);
+      // Se ainda há saldo, calcula o pagamento, caso contrário marca como não pago
+      let paymentAmount = 0;
+      if (hasBalance) {
+        // Recupera o valor a ser deduzido com base na fila atual
+        paymentAmount = getPaymentAmountForQueue(i + 1);
 
-      // Verifica se há saldo suficiente para processar o elemento
-      if (balanceToPaidNfts >= paymentAmount) {
-        // Deduz do saldo
-        balanceToPaidNfts = balanceToPaidNfts - paymentAmount;
+        // Verifica se há saldo suficiente para processar o elemento
+        if (balanceToPaidNfts >= paymentAmount) {
+          // Deduz do saldo
+          console.log("balance to paid nft %d", balanceToPaidNfts);
+          balanceToPaidNfts = balanceToPaidNfts - paymentAmount;
 
-        // Adiciona o elemento com true (pago) à nova matriz
-        queueDataNew[i].push({
-          user: element.user,
-          index: element.index,
-          batchLevel: element.batchLevel,
-          nextPaied: true,
-        });
+          // Adiciona o elemento com true (pago) à nova matriz
+          queueDataNew[i].push({
+            user: element.user,
+            index: element.index,
+            batchLevel: element.batchLevel,
+            nextPaied: true,
+          });
 
-        // Remove o elemento da fila após o processamento
-        if (first) {
-          queue[i] = queue[i].slice(1); // Remove o primeiro elemento
+          // Remove o elemento da fila após o processamento
+          if (first) {
+            queue[i] = queue[i].slice(1); // Remove o primeiro elemento
+          } else {
+            queue[i] = queue[i].slice(0, -1); // Remove o último elemento
+          }
         } else {
-          queue[i] = queue[i].slice(0, -1); // Remove o último elemento
+          // Se não há saldo suficiente, ativa o controle para parar de pagar os próximos
+          hasBalance = false;
         }
-      } else {
+      }
 
-        // Adiciona o elemento com false (não pago) à nova matriz
+      // Se não há saldo, todos os próximos elementos são marcados como não pagos
+      if (!hasBalance) {
         queueDataNew[i].push({
           user: element.user,
           index: element.index,
           batchLevel: element.batchLevel,
           nextPaied: false,
         });
-        
-        // Se o saldo não for suficiente, ainda removemos o elemento da fila
+
+        // Remove o elemento da fila
         if (first) {
           queue[i] = queue[i].slice(1); // Remove o primeiro elemento
         } else {
@@ -403,22 +434,36 @@ async function veSePaga(queue: nftQueue[][]) {
     }
   }
 
+  // Ordena a matriz antes de definir a nova fila
   queueDataNew.forEach((subArray) => {
     subArray.sort((a, b) => {
-      if (a.index < b.index) return -1;  // a deve vir antes de b
-      if (a.index > b.index) return 1;   // b deve vir antes de a
-      return 0;                           // a e b são iguais
+      if (a.index < b.index) return -1; // a deve vir antes de b
+      if (a.index > b.index) return 1; // b deve vir antes de a
+      return 0; // a e b são iguais
     });
   });
 
-
+  // Define a nova matriz de fila com os resultados processados
   setNewQueue(queueDataNew);
-} 
-  useEffect(() =>{
-      veSePaga(queueData);
-  }, [queueData])
+}
 
-   
+
+async function getPriceToken() {
+  const result = await getTokenPrice();
+  if(result!=null){
+  const cotation = parseFloat(result) / 1000000;
+  setPriceToken(cotation);
+}
+}
+  useEffect(() =>{
+      getPriceToken();
+  })
+
+  useEffect(() =>{
+    if(priceToken!=null){
+    veSePaga(queueData);
+  }
+  },[queueData, priceToken]);
   return (
     <>
       {error && <Error msg={error} onClose={clearError} />}
@@ -445,21 +490,13 @@ async function veSePaga(queue: nftQueue[][]) {
           ></Image>
           <p>{minted !== undefined? `${minted}/100` : "Loading..."}</p>
           <p className="mx-auto text-[20px] mt-[10px] font-semibold">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."}</p>
-          {approveToMint ?(
-              <button
-                onClick={buyNft}
+          <button
+                onClick={verificaApprove}
                 className=" hover:bg-[#a47618] mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px] glossy_cta"
               >
                 Buy Nft
               </button>
-            ) : (
-              <button
-                onClick={goApproveMint}
-                className=" hover:bg-[#a47618] mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px] glossy_cta"
-              >
-                Buy Nft
-              </button>
-            )}
+           
           </div>
         </div>
 
@@ -479,7 +516,7 @@ async function veSePaga(queue: nftQueue[][]) {
           </div>
         </div>
 
-        <div className="h-[300px] mx-auto max-w-[100%] overflow-y-auto slider-container p-2 mb-[100px] mt-[50px]">
+        <div className=" mx-auto max-w-[100%] overflow-y-auto slider-container p-2 mt-[50px]">
           <div className="w-[100%] flex flex-row items-center mb-[10px]">
             <div className="w-[10px] h-[10px] bg-yellow-500 ml-[15px]"></div>
             <p className="ml-[5px]">All Nfts</p>
@@ -488,13 +525,6 @@ async function veSePaga(queue: nftQueue[][]) {
             <div className="bg-blue-600 w-[10px] h-[10px] ml-[15px]"></div>
             <p className="ml-[5px]">Your Nft's</p>
           </div>
-          <p className="ml-[5px]">All Nfts</p>
-          <div className=" bg-[#008510] w-[10px] h-[10px]  ml-[15px]">
-          </div>
-          <p className="ml-[5px]">Next paid nfts</p>
-          <div className="bg-blue-600 w-[10px] h-[10px] ml-[15px]">
-          </div>
-          <p className="ml-[5px]">Your Nft's</p>
         </div>
           {newQueue.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
@@ -508,7 +538,7 @@ async function veSePaga(queue: nftQueue[][]) {
               </h2>
               <Slider 
                 {...settings(dataSet.length)}
-                className="w-full sm:max-w-[90%] max-w-[95%] lg:ml-[30px] ml-[10px] h-full mt-[10px] lg:text-[16px] sm:text-[12px] text-[10px]">
+                className=" w-full sm:max-w-[90%] max-w-[95%] lg:ml-[30px] ml-[10px] h-full mt-[10px] lg:text-[16px] sm:text-[12px] text-[10px] mb-[120px]">
                 {dataSet.map((item, itemIndex) => (
                   item.user && item.nextPaied === false && item.user.toLocaleLowerCase() === address?(
                   <div key={itemIndex} className="">
@@ -532,7 +562,7 @@ async function veSePaga(queue: nftQueue[][]) {
                       Index: {Number(item.index)}
                       </p>
                       <p>
-                      Will Received: {getPaymentAmountForQueue(Number(item.batchLevel))/10**18}$
+                      Will Received: {getPaymentAmountForQueue(Number(item.batchLevel))}$
                       </p>
                     </div>
                   </div>
@@ -567,7 +597,7 @@ async function veSePaga(queue: nftQueue[][]) {
                               address.toLocaleLowerCase()
                               ? `Will Received ${Number(getPaymentAmountForQueue(
                                   Number(item.batchLevel)
-                                ))/10**18}$`
+                                ))}$`
                               : "N/A"}
                           </p>
 
@@ -611,7 +641,7 @@ async function veSePaga(queue: nftQueue[][]) {
                       Index: {Number(item.index)}
                       </p>
                       <p>
-                      Will Received: {getPaymentAmountForQueue(Number(item.batchLevel))/10**18}$
+                      Will Received: {getPaymentAmountForQueue(Number(item.batchLevel))}$
                       </p>
                     </div>
                   </div>
