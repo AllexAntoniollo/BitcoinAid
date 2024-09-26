@@ -24,6 +24,7 @@ import {
   approveToAll,
   haveNft,
   claimQueue,
+  totalMintedOnBatch,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
 import { blockData } from "@/services/types";
@@ -47,6 +48,7 @@ const SimpleSlider = () => {
   const [approveToMint, setApproveToMint] = useState<boolean>(false);
   const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false);
   const [approveQueue, setApproveQueue] = useState<boolean>(false);
+  const [minted, setMinted] = useState<number>(0);
 
   async function doClaimQueue(index:number, queueId:number){
     if(address){
@@ -67,6 +69,14 @@ const SimpleSlider = () => {
     }
   }
 
+  async function totalSendInBatch(){
+    try{
+      const result = await totalMintedOnBatch();
+      setMinted(Number(result));
+    }catch(err){
+      ""
+    }
+  }
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Converte o valor para um número, se possível
     const value = event.target.value;
@@ -201,7 +211,7 @@ function youWillRecieved(value:number){
       if(result){
         setLoading(false);
         setAlert("Your NFT is now available in your wallet");
-        setApproveToMint(false);
+        setApproveToMint(true);
       }
     }catch(err){
       setLoading(false);
@@ -310,7 +320,8 @@ const handleApproveMintOpen = () => {
       await fetchQueue();
       await nextFour();
     };
-  
+    totalSendInBatch();
+    console.log("mintadas: %d", minted);
     fetchData();
   }, []);
   
@@ -488,6 +499,9 @@ const handleApproveMintOpen = () => {
                         </span>
                       </p>
                       <p>
+                      Index: {Number(item.index)}
+                      </p>
+                      <p>
                       Will Received: {youWillRecieved(Number(item.batchLevel))}$
                       </p>
                     </div>
@@ -508,7 +522,10 @@ const handleApproveMintOpen = () => {
                                 -4
                               )}`
                             : "N/A"}
-                        </span>
+                      </span>
+                      <p>
+                      Index: {Number(item.index)}
+                      </p>
                       </p>
                       <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? `Will Received ${youWillRecieved(Number(item.batchLevel))}$` : "N/A"}</p>
                       {item.user.toLocaleLowerCase() === address ? (
@@ -535,6 +552,9 @@ const handleApproveMintOpen = () => {
                               )}`
                             : "N/A"}
                         </span>
+                        <p>
+                        Index: {Number(item.index)}
+                      </p>
                       </p>
                     </div>
                   </div>

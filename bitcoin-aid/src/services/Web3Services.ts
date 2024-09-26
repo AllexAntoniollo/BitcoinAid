@@ -319,3 +319,11 @@ export async function getBalanceClaim(address:string){
   const result = await get.previewTotalValue(address);
   return result;
 }
+
+export async function totalMintedOnBatch(){
+  const provider = new ethers.JsonRpcProvider('https://polygon-amoy.drpc.org');
+  const get = new ethers.Contract(COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "", collectionAbi, provider);
+
+  const result = await get.totalMintedInBatch();
+  return result;
+}
