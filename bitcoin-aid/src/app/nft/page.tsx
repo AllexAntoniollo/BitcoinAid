@@ -17,7 +17,6 @@ import {
   mintNft,
   nftPrice,
   approveMint,
-  nextToPaid,
   balanceFree,
   totalNfts,
   isApproveToQueue,
@@ -37,7 +36,6 @@ const SimpleSlider = () => {
   const [blockData, setBlockData] = useState<blockData[][]>([]);
   const [nextPaid, setNextPaid] = useState<nftQueue[]>();
   const [balance, setBalance] = useState<number>();
-  const [valuesNextFour, setValuesNextFour]= useState<number[]>([]);
   const [currentBatch, setCurrentBatch] = useState<number>(0);
   const [addNftOpen, setNftAddOpen] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<number | "">("");
@@ -49,6 +47,7 @@ const SimpleSlider = () => {
   const [approveToMintOpen, setApproveToMintOpen] = useState<boolean>(false);
   const [approveQueue, setApproveQueue] = useState<boolean>(false);
   const [minted, setMinted] = useState<number>(0);
+  const [newQueue, setNewQueue] = useState<blockData[][]>([]);
 
   async function doClaimQueue(index:number, queueId:number){
     if(address){
@@ -59,8 +58,7 @@ const SimpleSlider = () => {
           setLoading(false);
           setAlert("Be happy! Your NFTs have already deposited their earnings into your wallet");
           fetchQueue();
-          nextFour();
-        }
+       }
       }catch(err){
         setLoading(false);
         setError("Ops! Something went wrong");
@@ -72,11 +70,16 @@ const SimpleSlider = () => {
   async function totalSendInBatch(){
     try{
       const result = await totalMintedOnBatch();
+      console.log("total mintado %d", result);
       setMinted(Number(result));
     }catch(err){
       ""
     }
   }
+
+  useEffect(() =>{
+    totalSendInBatch();
+  })
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     // Converte o valor para um número, se possível
     const value = event.target.value;
@@ -118,91 +121,6 @@ const SimpleSlider = () => {
     }
   }
 
-  async function nextFour(){
-    const total = await totalNfts();
-    if(total >= 4){
-      const result = await nextToPaid();
-      let getBalance = await balanceFree();
-    let balance = (parseInt(getBalance) / Math.pow(10, 18));
-    console.log("Tem %d aid disponivel pras nft", balance);
-
-    let valueNextFour = [];
-    let nextPaidArray = [];
-    setBalance(balance);
-    for(let i = 0; i < Math.min(result.length, 4); i++){
-      let willReceived = 0;
-      const lote = result[i].batchLevel;
-      const batchDecimal = Number(lote) % 10;
-      if(batchDecimal == 0){
-        valueNextFour.push(5120*3);
-      }else{
-        willReceived = 10;
-        for(let j = 1; j < batchDecimal; j++){
-          willReceived = willReceived*2;
-        }
-        willReceived = willReceived*3;
-      }
-      valueNextFour.push(willReceived);
-    }
-    for(let k = 0; k<4; k++){
-      balance -= valueNextFour[k]; 
-      console.log("balance atual",balance);
-      if(balance > 0){
-        nextPaidArray.push(result[k]);
-      }
-    }
-    setNextPaid(nextPaidArray);
-    }else{
-      let dontNextPaied = undefined;
-      setNextPaid(dontNextPaied);
-    }
-  }
-
-  async function verificaPaied() {
-    const flattenedArray: blockData[][] = [];
-    for (let i = 0; i < queueData.length; i++) {
-      // Inicializa o array para cada `i`
-      flattenedArray[i] = [];
-      
-      for (let j = 0; j < queueData[i].length; j++) {
-        const item = queueData[i][j];
-        const isPaied = nextPaid ? nextPaid.some(next => next.index === item.index) : false;
-        // Atribua um novo objeto no índice apropriado
-        flattenedArray[i][j] = {
-          user: item.user,
-          index: item.index,
-          batchLevel: item.batchLevel,
-          nextPaied: isPaied,
-        };
-      }
-    }
-  
-    console.log('Atualizando blockData:', flattenedArray);
-    setBlockData(flattenedArray);
-  }
-  
-
-function youWillRecieved(value:number){
-    const batchDecimal = value % 10;
-    let willReceived = 0;
-    if(value!=0){
-      if (batchDecimal == 0){
-        willReceived = 5120*3;
-      }else{
-       willReceived = 10;
-        for(let j = 1; j < batchDecimal; j++){
-          willReceived = willReceived*2;
-        }
-        willReceived = willReceived*3;
-      }
-    }else{
-      willReceived = 0;
-    }
-  
-    return willReceived;
-  }
-
-
   async function approveToMintNft(value:number){
     try{
       setLoading(true);
@@ -210,12 +128,12 @@ function youWillRecieved(value:number){
       const result = await approveMint(priceInWei);
       if(result){
         setLoading(false);
-        setAlert("Your NFT is now available in your wallet");
+        setAlert("Now you can buy NFT's");
         setApproveToMint(true);
       }
     }catch(err){
       setLoading(false);
-      setError("Failed to buy nft")
+      setError("Failed to buy nft");
     }
   }
 
@@ -245,7 +163,6 @@ function youWillRecieved(value:number){
               setLoading(false);
               setAlert("Your nft has been successfully queued");
               fetchQueue();
-              nextFour();
             }
           }catch(err){
             setLoading(false);
@@ -271,8 +188,8 @@ const handleApproveMintOpen = () => {
       const result = await mintNft(1);
       if(result){
         setLoading(false);
-        setAlert("Congratulations on purchasing your NFT")
-
+        setAlert("Congratulations on purchasing your NFT");
+        totalSendInBatch();
       }else{
         setError("Failed to purchase nft")
         setLoading(false);
@@ -318,18 +235,12 @@ const handleApproveMintOpen = () => {
   useEffect(() => {
     const fetchData = async () => {
       await fetchQueue();
-      await nextFour();
     };
     totalSendInBatch();
     console.log("mintadas: %d", minted);
     fetchData();
   }, []);
   
-  useEffect(() => {
-    if (queueData.length > 0) {
-      verificaPaied();
-    }
-  }, [queueData, nextPaid]);
   
 
   useEffect(() => {
@@ -390,8 +301,122 @@ const handleApproveMintOpen = () => {
       ],
     };
   };
-  
-    
+
+
+
+
+
+  // Função que retorna o valor a ser deduzido com base na fila
+function getPaymentAmountForQueue(queueIndex: number):number {
+  console.log("Numero Recebido: %d", queueIndex);
+  let start = 10;
+  let batchDecimal = queueIndex % 10;
+  let valueNft = 0;
+  if(batchDecimal == 0){
+    valueNft = 5120*3;
+  }else{
+    for(let i = 1; i < batchDecimal; i++){
+      start = start*2;
+    }
+    valueNft = start*3;
+  }
+  return (valueNft)*10**18;
+}
+
+async function veSePaga(queue: nftQueue[][]) {
+  let balanceToPaidNfts = Number(await balanceFree());
+
+  let i = 0; // Índice da fila atual
+  let first = true; // Define se é o primeiro ou o último elemento da fila atual
+
+  // Matriz que vai armazenar os resultados com booleano (true/false)
+  const queueDataNew: blockData[][] = Array.from({ length: queue.length }, () => []);
+
+  // Loop principal até o saldo acabar ou todos os elementos serem processados
+  while (balanceToPaidNfts > 0 && queue.some((fila) => fila.length > 0)) {
+    // Verifica se ainda existem elementos na fila atual
+    if (queue[i] && queue[i].length > 0) {
+      let element;
+
+      // Verifica se estamos processando o primeiro ou o último elemento
+      if (first) {
+        element = queue[i][0]; // Primeiro elemento da fila
+      } else {
+        element = queue[i][queue[i].length - 1]; // Último elemento da fila
+      }
+
+      // Recupera o valor a ser deduzido com base na fila atual
+      const paymentAmount = getPaymentAmountForQueue(i+1);
+
+      // Verifica se há saldo suficiente para processar o elemento
+      if (balanceToPaidNfts >= paymentAmount) {
+        // Deduz do saldo
+        balanceToPaidNfts = balanceToPaidNfts - paymentAmount;
+
+        // Adiciona o elemento com true (pago) à nova matriz
+        queueDataNew[i].push({
+          user: element.user,
+          index: element.index,
+          batchLevel: element.batchLevel,
+          nextPaied: true,
+        });
+
+        // Remove o elemento da fila após o processamento
+        if (first) {
+          queue[i] = queue[i].slice(1); // Remove o primeiro elemento
+        } else {
+          queue[i] = queue[i].slice(0, -1); // Remove o último elemento
+        }
+      } else {
+
+        // Adiciona o elemento com false (não pago) à nova matriz
+        queueDataNew[i].push({
+          user: element.user,
+          index: element.index,
+          batchLevel: element.batchLevel,
+          nextPaied: false,
+        });
+        
+        // Se o saldo não for suficiente, ainda removemos o elemento da fila
+        if (first) {
+          queue[i] = queue[i].slice(1); // Remove o primeiro elemento
+        } else {
+          queue[i] = queue[i].slice(0, -1); // Remove o último elemento
+        }
+      }
+
+      // Alterna entre o primeiro e o último elemento
+      first = !first;
+    }
+
+    // Se todos os elementos de uma fila forem processados, avançamos para a próxima fila
+    if (queue[i].length === 0) {
+      // Verifica se está na última fila
+      if (i === queue.length - 1) {
+        // Se estiver na última fila e não houver mais elementos, saia do loop
+        break;
+      } else {
+        // Muda para a próxima fila de forma circular
+        i = (i + 1) % queue.length; // Muda para a próxima fila
+      }
+    }
+  }
+
+  queueDataNew.forEach((subArray) => {
+    subArray.sort((a, b) => {
+      if (a.index < b.index) return -1;  // a deve vir antes de b
+      if (a.index > b.index) return 1;   // b deve vir antes de a
+      return 0;                           // a e b são iguais
+    });
+  });
+
+
+  setNewQueue(queueDataNew);
+} 
+  useEffect(() =>{
+      veSePaga(queueData);
+  }, [queueData])
+
    
   return (
     <>
@@ -418,6 +443,7 @@ const handleApproveMintOpen = () => {
             height={1000}
             className="mx-auto max-w-[60%] max-h-[55%]"
           ></Image>
+          <p>{minted !== undefined? `${minted}/100` : "Loading..."}</p>
           <p className="mx-auto text-[20px] mt-[10px] font-semibold">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."}</p>
           {approveToMint ?(
               <button
@@ -466,7 +492,7 @@ const handleApproveMintOpen = () => {
           </div>
           <p className="ml-[5px]">Your Nft's</p>
         </div>
-          {blockData.map((dataSet, index) => {
+          {newQueue.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
             return hasUserData ? (
 
@@ -480,7 +506,7 @@ const handleApproveMintOpen = () => {
                 {...settings(dataSet.length)}
                 className="w-full sm:max-w-[90%] max-w-[95%] lg:ml-[30px] ml-[10px] h-full mt-[10px] lg:text-[16px] sm:text-[12px] text-[10px]">
                 {dataSet.map((item, itemIndex) => (
-                  item.user && item.user.toLowerCase() === address && item.nextPaied === false ?(
+                  item.user && item.nextPaied === false && item.user.toLocaleLowerCase() === address?(
                   <div key={itemIndex} className="">
                     <div className="mt-[50px] nftUserPiscando p-2 lg:p-4 caixa3d transform transition-transform">
                       <div className="">
@@ -502,44 +528,69 @@ const handleApproveMintOpen = () => {
                       Index: {Number(item.index)}
                       </p>
                       <p>
-                      Will Received: {youWillRecieved(Number(item.batchLevel))}$
+                      Will Received: {getPaymentAmountForQueue(Number(item.batchLevel))/10**18}$
                       </p>
                     </div>
                   </div>
-                  ) : item.user && item.nextPaied === true ? (
+                  ) : item.user && item.nextPaied === true ?(
                     <div key={itemIndex} className="relative">
-                    <div className="nftPaidPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d h-full flex flex-col justify-between">
-                      <div className="">
-                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
-                        <h3>Position in the queue: {itemIndex + 1}</h3>
+                      <div className="nftPaidPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d h-full flex flex-col justify-between">
+                        <div className="">
+                        <p className="font-semibold">
+                              {address &&
+                              item.user.toLocaleLowerCase() ==
+                                address.toLocaleLowerCase()
+                                ? "Your"
+                                : ""}
+                            </p>
+                            <h3>Position in the queue: {itemIndex + 1}</h3>
+                        </div>
+                        <p>
+                            User:{" "}
+                            <span>
+                              {" "}
+                              {item.user
+                                ? `${item.user.slice(0, 6)}...${item.user.slice(
+                                    -4
+                                  )}`
+                                : "N/A"}
+                            </span>
+                            <p>Index: {Number(item.index)}</p>
+                          </p>
+
+                          <p className="font-semibold">
+                            {address &&
+                            item.user.toLocaleLowerCase() ==
+                              address.toLocaleLowerCase()
+                              ? `Will Received ${Number(getPaymentAmountForQueue(
+                                  Number(item.batchLevel)
+                                ))/10**18}$`
+                              : "N/A"}
+                          </p>
+
+
+                           {item.user.toLocaleLowerCase() === address ? (
+                            <button
+                              onClick={() =>
+                                doClaimQueue(
+                                  Number(item.index),
+                                  Number(item.batchLevel)
+                                )
+                              }
+                              className="flex items-center justify-center left-1/2 transform -translate-x-1/2 sm:py-[2px] py-[6px] w-[80%] bottom-0 border-[1px] text-[8px] md:text-[12px] border-white rounded-lg mt-[10px] glossy_claim"
+                            >
+                              CLAIM
+                            </button>
+                          ) : (
+                            ""
+                          )}
                       </div>
-                      <p>
-                        User:{" "}
-                        <span>
-                          {" "}
-                          {item.user
-                            ? `${item.user.slice(0, 6)}...${item.user.slice(
-                                -4
-                              )}`
-                            : "N/A"}
-                      </span>
-                      <p>
-                      Index: {Number(item.index)}
-                      </p>
-                      </p>
-                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? `Will Received ${youWillRecieved(Number(item.batchLevel))}$` : "N/A"}</p>
-                      {item.user.toLocaleLowerCase() === address ? (
-                       <button onClick={() => doClaimQueue(Number(item.index), Number(item.batchLevel))} className="absolute justify-center left-1/2 transform -translate-x-1/2 py-[2px] w-[80%] flex bottom-0 border-[1px] text-[8px] md:text-[12px] border-white rounded-lg mt-[10px] glossy_claim">CLAIM</button>
-                    ):(
-                      ""
-                     )}
                     </div>
-                  </div>
-                  
-                  ): item.user && item.nextPaied == false ? (
-                    <div key={itemIndex} className="relative">
-                    <div className="nftPiscando mt-[50px] p-2 lg:p-4 transform transition-transform caixa3d">
+                  ) : item.user && item.nextPaied === false && item.user.toLocaleLowerCase() != address?(
+                    <div key={itemIndex} className="">
+                    <div className="mt-[50px] nftPiscando p-2 lg:p-4 caixa3d transform transition-transform">
                       <div className="">
+                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : ""}</p>
                         <h3>Position in the queue: {itemIndex + 1}</h3>
                       </div>
                       <p>
@@ -552,9 +603,12 @@ const handleApproveMintOpen = () => {
                               )}`
                             : "N/A"}
                         </span>
-                        <p>
-                        Index: {Number(item.index)}
                       </p>
+                      <p>
+                      Index: {Number(item.index)}
+                      </p>
+                      <p>
+                      Will Received: {getPaymentAmountForQueue(Number(item.batchLevel))/10**18}$
                       </p>
                     </div>
                   </div>
