@@ -128,17 +128,6 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
         return queueSizeByBatch[batch];
     }
 
-    function getLastUnpaidQueue() external view returns (uint) {
-        uint last = lastUnpaidQueue;
-        while (queueSizeByBatch[last] == 0 && last <= 100) {
-            ++last;
-        }
-        if (last == 101) {
-            return BTCACollection.getCurrentBatch();
-        }
-        return last;
-    }
-
     function incrementBalance(uint amount) external onlyDonation {
         balanceFree += amount;
         emit BalanceIncremented(amount);

@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
 import "./IPaymentManager.sol";
 
 contract BTCACollection is ERC1155, Ownable, ReentrancyGuard {
@@ -36,7 +35,12 @@ contract BTCACollection is ERC1155, Ownable, ReentrancyGuard {
         address initialOwner,
         address _token,
         address _paymentManager
-    ) ERC1155("URI") Ownable(initialOwner) {
+    )
+        ERC1155(
+            "https://ipfs.io/ipfs/QmWaTRF4FJHDRM75WYyaNXve1opnaThGdyP3fDWxaVcL2P"
+        )
+        Ownable(initialOwner)
+    {
         token = IERC20(_token);
         paymentManager = IPaymentManager(_paymentManager);
     }
