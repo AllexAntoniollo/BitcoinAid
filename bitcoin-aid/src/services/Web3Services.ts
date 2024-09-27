@@ -69,8 +69,6 @@ export async function allow(address: string, contract: string) {
   );
 
   const allowance = await getAllowance.allowance(address, contract);
-
-  console.log(allowance);
   return allowance;
 }
 
@@ -245,7 +243,7 @@ export async function nftPrice(batch: number) {
   return price;
 }
 
-export async function approveMint(value: BigInt) {
+export async function approveMint(value: Number) {
   const provider = await getProvider();
   const signer = await provider.getSigner();
 
@@ -484,9 +482,9 @@ export async function allowanceUsdt(address:string){
   const provider = await getProvider();
   const signer = await provider.getSigner();
 
-  const get = new ethers.Contract(USDT_ADDRESS ? USDT_ADDRESS : "", usdtAbi, provider);
+  const get = new ethers.Contract(USDT_ADDRESS ? USDT_ADDRESS : "", usdtAbi, signer);
 
   const result = await get.allowance(address, COLLECTION_ADDRESS);
 
-  return (Number(result))/10**6
+  return (Number(result))/10**6;
 }

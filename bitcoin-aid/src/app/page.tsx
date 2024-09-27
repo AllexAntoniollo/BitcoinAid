@@ -84,7 +84,6 @@ export default function Home() {
         let etherValue = ethers.formatEther(result);
         const etherNumber = parseFloat(etherValue);
         await setAllowance(etherNumber);
-        console.log("Total etherValue %d", etherNumber);
       } else {
         setAllowance(0);
       }

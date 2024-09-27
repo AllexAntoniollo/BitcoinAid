@@ -24,6 +24,7 @@ import {
   totalMintedOnBatch,
   getTokenPrice,
   allowanceUsdt,
+  getNftUserByBatch,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
 import { blockData } from "@/services/types";
@@ -50,9 +51,28 @@ const SimpleSlider = () => {
   const [minted, setMinted] = useState<number>(0);
   const [newQueue, setNewQueue] = useState<blockData[][]>([]);
   const [priceToken, setPriceToken] = useState<number>(0);
+  const [lastBatchWithNft, setLastBatchWithNft] = useState<number>(0);
+
+  async function getLastBatch(){
+    const result = await getCurrentBatch();
+    setCurrentBatch(result);
+    if (address) {
+      for (let i = 1; i <= result; i++) {
+        const value = await getNftUserByBatch(address, i);
+        if(value){
+          setLastBatchWithNft(i);
+          handleSubmit();
+          return;
+        }
+      }
+      setNftAddOpen(false);
+      setError("You don't have Nft's");
+    }
+  }
 
 
   async function verificaApprove(){
+    console.log("chamou verificaçao");
     if(address){
       const result = await allowanceUsdt(address);
       if(result >= nftCurrentPrice){
@@ -95,7 +115,6 @@ const SimpleSlider = () => {
   async function totalSendInBatch() {
     try {
       const result = await totalMintedOnBatch();
-      console.log("total mintado %d", result);
       setMinted(Number(result));
     } catch (err) {
       ("");
@@ -105,12 +124,6 @@ const SimpleSlider = () => {
   useEffect(() =>{
     totalSendInBatch();
   })
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    // Converte o valor para um número, se possível
-    const value = event.target.value;
-    const numericValue = value === "" ? "" : Number(value);
-    setInputValue(numericValue);
-  };
 
   const handleApproveQueueOpen = () => {
     setApproveQueue(false);
@@ -148,7 +161,9 @@ const SimpleSlider = () => {
   async function approveToMintNft(value:number){
     try{
       setLoading(true);
-      const priceInWei = BigInt(value) * BigInt(Math.pow(10, 18));
+      console.log("value : %d", value);
+      const priceInWei = Number(value) * 1000000;
+      console.log("price in wei: %d", priceInWei);
       const result = await approveMint(priceInWei);
       if (result) {
         setLoading(false);
@@ -161,9 +176,10 @@ const SimpleSlider = () => {
   }
 
   const doApproveMint = () => {
+    console.log("chamou a funcao");
     const priceInWei: number =
-      Number(nftCurrentPrice) * Number(Math.pow(10, 6));
-    console.log(priceInWei);
+      Number(nftCurrentPrice);
+      console.log("Valor da nft passado: ", priceInWei);
     if (address) {
       approveToMintNft(priceInWei);
     } else {
@@ -172,17 +188,13 @@ const SimpleSlider = () => {
   };
 
   const handleSubmit = async () => {
-    if (Number(inputValue == 0)) {
-      setNftAddOpen(false);
-      setError("You must enter a valid batch");
-    } else {
-      if (address) {
-        const result = await haveNft(address, Number(inputValue));
+      if (address && lastBatchWithNft) {
+        const result = await haveNft(address, lastBatchWithNft);
         if (result > 0) {
           setNftAddOpen(false);
           setLoading(true);
           try {
-            const tx = await addQueue(Number(inputValue));
+            const tx = await addQueue(lastBatchWithNft);
             if (tx) {
               setLoading(false);
               setAlert("Your nft has been successfully queued");
@@ -197,7 +209,6 @@ const SimpleSlider = () => {
           setError("You don't have any NFTs from this batch");
         }
       }
-    }
   };
 
 
@@ -246,7 +257,6 @@ const SimpleSlider = () => {
 
       const results = await Promise.all(promises);
       setQueueData(results);
-      console.log("resultado ", results);
     } catch (err) {
       console.log(err);
     }
@@ -256,7 +266,6 @@ const SimpleSlider = () => {
       await fetchQueue();
     };
     totalSendInBatch();
-    console.log("mintadas: %d", minted);
     fetchData();
   }, []);
   
@@ -326,7 +335,6 @@ const SimpleSlider = () => {
 
   // Função que retorna o valor a ser deduzido com base na fila
 function getPaymentAmountForQueue(queueIndex: number):number {
-  console.log("Numero Recebido: %d", queueIndex);
   let start = 10;
   let batchDecimal = queueIndex % 10;
   let valueNft = 0;
@@ -343,11 +351,10 @@ function getPaymentAmountForQueue(queueIndex: number):number {
 
 async function veSePaga(queue: nftQueue[][]) {
   let balanceToPaidNfts = Number(await balanceFree());
-  balanceToPaidNfts = (balanceToPaidNfts / 10 ** 18) / Number(priceToken);
+  balanceToPaidNfts = (balanceToPaidNfts / 10 ** 18) * Number(priceToken);
   let i = 0; // Índice da fila atual
   let first = true; // Define se é o primeiro ou o último elemento da fila atual
 
-  console.log("cotação token %d", priceToken);
 
   // Matriz que vai armazenar os resultados com booleano (true/false)
   const queueDataNew: blockData[][] = Array.from({ length: queue.length }, () => []);
@@ -377,7 +384,6 @@ async function veSePaga(queue: nftQueue[][]) {
         // Verifica se há saldo suficiente para processar o elemento
         if (balanceToPaidNfts >= paymentAmount) {
           // Deduz do saldo
-          console.log("balance to paid nft %d", balanceToPaidNfts);
           balanceToPaidNfts = balanceToPaidNfts - paymentAmount;
 
           // Adiciona o elemento com true (pago) à nova matriz
@@ -555,7 +561,7 @@ async function getPriceToken() {
                             ? `${item.user.slice(0, 6)}...${item.user.slice(
                                 -4
                               )}`
-                            : "N/A"}
+                            : ""}
                         </span>
                       </p>
                       <p>
@@ -589,16 +595,12 @@ async function getPriceToken() {
                                   )}`
                                 : "N/A"}
                             </span>
-                            <p>Index: {Number(item.index)}</p>
                           </p>
+                          <p>Index: {Number(item.index)}</p>
                           <p className="font-semibold">
-                            {address &&
-                            item.user.toLocaleLowerCase() ==
-                              address.toLocaleLowerCase()
-                              ? `Will Received ${Number(getPaymentAmountForQueue(
+                             Will Received {Number(getPaymentAmountForQueue(
                                   Number(item.batchLevel)
-                                ))}$`
-                              : "N/A"}
+                                ))}$
                           </p>
 
 
@@ -634,7 +636,7 @@ async function getPriceToken() {
                             ? `${item.user.slice(0, 6)}...${item.user.slice(
                                 -4
                               )}`
-                            : "N/A"}
+                            : ""}
                         </span>
                       </p>
                       <p>
@@ -671,16 +673,9 @@ async function getPriceToken() {
             <p className="text-center text-white text-[30px] font-Agency">
               ADD NFT QUEUE
             </p>
-            <input
-              className="w-full m-w-[90%] p-2 bg-[#33322d] rounded-3xl mt-[20px] focus:outline-none focus:border-2 focus:border-[#eda921]"
-              value={inputValue}
-              onChange={handleInputChange}
-              type="number"
-              placeholder="Which Batch"
-            ></input>
             <div className="w-full flex flex-col items-center mb-[15px] mt-[20px]">
               <button
-                onClick={handleSubmit}
+                onClick={getLastBatch}
                 className="w-[150px] font-semibold rounded-3xl bg-[#eda921] p-[8px]"
               >
                 Go Queue
