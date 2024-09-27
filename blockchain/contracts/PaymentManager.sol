@@ -12,6 +12,7 @@ contract PaymentManager is Ownable {
     uint public balanceFree;
     mapping(address => uint) private recipientsClaim;
     mapping(address => uint24) public recipientsPercentage;
+    mapping(address => bool) public immutableWallets;
     address[] private recipients;
     uint8 public totalRecipients;
     uint24 public totalPercentage;
@@ -30,6 +31,12 @@ contract PaymentManager is Ownable {
     event DonationSet(address indexed donationAddress);
     event CollectionSet(address indexed collectionContract);
     event BalanceIncremented(uint256 amount);
+    event RecipientAdded(address indexed newRecipient, uint24 percentage);
+    event RecipientPercentageUpdated(
+        address indexed recipient,
+        uint24 newPercentage
+    );
+    event ImmutableWalletAdded(address indexed wallet);
 
     constructor(address _token, address initialOwner) Ownable(initialOwner) {
         token = IERC20(_token);
@@ -118,5 +125,59 @@ contract PaymentManager is Ownable {
 
     function getRecipients() external view returns (address[] memory) {
         return recipients;
+    }
+
+    function addRecipient(
+        address newRecipient,
+        uint24 percentage
+    ) external onlyOwner {
+        require(newRecipient != address(0), "Recipient address cannot be zero");
+        require(
+            recipientsPercentage[newRecipient] == 0,
+            "Recipient already exists"
+        );
+        require(
+            totalPercentage + percentage <= 1000000,
+            "Total percentage exceeds 100%"
+        );
+
+        recipients.push(newRecipient);
+        recipientsPercentage[newRecipient] = percentage;
+        totalPercentage += percentage;
+        totalRecipients++;
+
+        emit RecipientAdded(newRecipient, percentage);
+    }
+
+    function addImmutableWallet(address wallet) external onlyOwner {
+        require(wallet != address(0), "Wallet address cannot be zero");
+        require(
+            recipientsPercentage[wallet] > 0,
+            "Wallet must be a recipient to be made immutable"
+        );
+        immutableWallets[wallet] = true;
+        emit ImmutableWalletAdded(wallet);
+    }
+
+    function updateRecipientPercentage(
+        address recipient,
+        uint24 newPercentage
+    ) external onlyOwner {
+        require(
+            recipientsPercentage[recipient] > 0,
+            "Recipient does not exist"
+        );
+        require(
+            !immutableWallets[recipient],
+            "This recipient is immutable and cannot have their percentage updated"
+        );
+
+        uint24 currentPercentage = recipientsPercentage[recipient];
+        totalPercentage = totalPercentage - currentPercentage + newPercentage;
+        require(totalPercentage <= 1000000, "Total percentage exceeds 100%");
+
+        recipientsPercentage[recipient] = newPercentage;
+
+        emit RecipientPercentageUpdated(recipient, newPercentage);
     }
 }

@@ -311,64 +311,6 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
         return userNFTs;
     }
 
-    function getNextUsersToPaid() external view returns (QueueEntry[] memory) {
-        require(totalNFTsInQueue >= 4, "At least 4 NFTs required");
-
-        QueueEntry[] memory result = new QueueEntry[](4);
-        uint256 counter = 0;
-        uint256 currentBatch = lastUnpaidQueue;
-
-        while (counter < 4) {
-            while (
-                queueSizeByBatch[currentBatch] == 0 &&
-                currentBatch <= currentIndex
-            ) {
-                currentBatch++;
-            }
-
-            uint256 currentHead = headByBatch[currentBatch];
-            if (currentHead != 0 && counter < 4) {
-                result[counter] = processPaymentView(currentHead, currentBatch);
-                counter++;
-
-                if (
-                    queueByBatch[currentBatch][currentHead].next != 0 &&
-                    counter < 4
-                ) {
-                    currentHead = queueByBatch[currentBatch][currentHead].next;
-                    result[counter] = processPaymentView(
-                        currentHead,
-                        currentBatch
-                    );
-                    counter++;
-                }
-            }
-
-            uint256 currentTail = tailByBatch[currentBatch];
-            if (currentTail != 0 && currentTail != currentHead && counter < 4) {
-                result[counter] = processPaymentView(currentTail, currentBatch);
-                counter++;
-
-                if (
-                    queueByBatch[currentBatch][currentTail].prev != 0 &&
-                    currentTail != currentHead &&
-                    counter < 4
-                ) {
-                    currentTail = queueByBatch[currentBatch][currentTail].prev;
-                    result[counter] = processPaymentView(
-                        currentTail,
-                        currentBatch
-                    );
-                    counter++;
-                }
-            }
-
-            currentBatch++;
-        }
-
-        return result;
-    }
-
     function getRequiredBalanceForNextFour() public view returns (uint256) {
         uint256 tokenPrice = uniswapOracle.returnPrice();
         uint256 totalRequiredBalance = 0;
