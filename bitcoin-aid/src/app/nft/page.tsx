@@ -107,7 +107,7 @@ const SimpleSlider = () => {
       } catch (err: any) {
         setLoading(false);
 
-        setError("Ops! Something went wrong: " + err.reason);
+        setError("Ops! Something went wrong!");
       }
     }
   }
@@ -215,7 +215,7 @@ const SimpleSlider = () => {
   const buyNft = async () => {
     try {
       setLoading(true);
-      const result = await mintNft(1);
+      const result = await mintNft();
       if (result) {
         setLoading(false);
         setAlert("Congratulations on purchasing your NFT");

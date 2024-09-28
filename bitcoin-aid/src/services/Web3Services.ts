@@ -12,6 +12,7 @@ const QUEUE_ADDRESS = process.env.NEXT_PUBLIC_QUEUE_ADDRESS;
 const COLLECTION_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ADDRESS;
 const USDT_ADDRESS = process.env.NEXT_PUBLIC_USDT_ADDRESS;
 const ORACLE_ADDRESS = process.env.NEXT_PUBLIC_ORACLE_ADDRESS;
+const RPC_POLYGON = process.env.NEXT_PUBLIC_RPC_POLYGON;
 import { nftQueue } from "./types";
 import { promises } from "dns";
 
@@ -109,7 +110,7 @@ export async function donation(amount: number, fifteenDays: boolean) {
 }
 
 export async function balanceDonationPool() {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
 
   const donationContract = new ethers.Contract(
     DONATION_ADDRESS ? DONATION_ADDRESS : "",
@@ -169,7 +170,7 @@ export async function claim() {
 }
 
 export async function getQueue(batchLevel: number): Promise<nftQueue[]> {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
 
   const queueContract = new ethers.Contract(
     QUEUE_ADDRESS ? QUEUE_ADDRESS : "",
@@ -199,7 +200,7 @@ export async function addQueue(batch: number) {
 }
 
 export async function getCurrentBatch() {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
 
   const collectionContract = new ethers.Contract(
     COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "",
@@ -211,7 +212,7 @@ export async function getCurrentBatch() {
   return currentBatch;
 }
 
-export async function mintNft(quantity: number) {
+export async function mintNft() {
   const provider = await getProvider();
   const signer = await provider.getSigner();
 
@@ -222,7 +223,7 @@ export async function mintNft(quantity: number) {
   );
 
   try {
-    const tx = await collectionContract.mint(quantity);
+    const tx = await collectionContract.mint();
     await tx.wait();
     return true;
   } catch (err) {
@@ -231,7 +232,7 @@ export async function mintNft(quantity: number) {
 }
 
 export async function nftPrice(batch: number) {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
 
   const collectionContract = new ethers.Contract(
     COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "",
@@ -260,7 +261,7 @@ export async function approveMint(value: Number) {
 }
 
 export async function nextToPaid() {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
 
   const getNextFour = new ethers.Contract(
     QUEUE_ADDRESS ? QUEUE_ADDRESS : "",
@@ -273,7 +274,7 @@ export async function nextToPaid() {
 }
 
 export async function totalNfts() {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
 
   const getNextFour = new ethers.Contract(
     QUEUE_ADDRESS ? QUEUE_ADDRESS : "",
@@ -286,7 +287,7 @@ export async function totalNfts() {
 }
 
 export async function balanceFree() {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
 
   const getNextFour = new ethers.Contract(
     QUEUE_ADDRESS ? QUEUE_ADDRESS : "",
@@ -386,14 +387,14 @@ export async function getNftUserByBatch(address: string, batch: number) {
 }
 
 export async function getTokenPrice() {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
   const get = new ethers.Contract(
     ORACLE_ADDRESS ? ORACLE_ADDRESS : "",
     oracleAbi,
     provider
   );
-
-  const result = await get.returnPrice();
+  
+  const result = await get.returnPrice(BigInt(1000000000000000000));
   return result;
 }
 
@@ -467,7 +468,7 @@ export async function claimBtcaQueue() {
 }
 
 export async function totalMintedOnBatch() {
-  const provider = new ethers.JsonRpcProvider("https://polygon-amoy.drpc.org");
+  const provider = new ethers.JsonRpcProvider(RPC_POLYGON);
   const get = new ethers.Contract(
     COLLECTION_ADDRESS ? COLLECTION_ADDRESS : "",
     collectionAbi,
