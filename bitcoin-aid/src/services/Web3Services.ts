@@ -393,9 +393,14 @@ export async function getTokenPrice() {
     oracleAbi,
     provider
   );
+  try{
+    const result = await get.returnPrice(BigInt(1000000000000000000));
+    return result
+  }catch(err){
+    return 0 
+  }
+ 
   
-  const result = await get.returnPrice(BigInt(1000000000000000000));
-  return result;
 }
 
 export async function getBalanceClaim(address: string) {

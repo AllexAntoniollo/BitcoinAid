@@ -219,7 +219,7 @@ export default function Home() {
         setLoading(false);
         setAlert(
           `Your $${
-            Number(userBalanceValue) / 1000000
+            Number(balanceClaimed.toFixed(2))
           } dollars in BTCA are now available in your wallet`
         );
         if (address) {
