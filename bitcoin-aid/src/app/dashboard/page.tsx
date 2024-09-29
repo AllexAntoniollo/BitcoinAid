@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { FaRegSadTear } from "react-icons/fa";
 import {
   getCurrentBatch,
   getNftUserByBatch,
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [alert, setAlert] = useState("");
+  const [temNft, setTemNft] = useState<boolean>(false);
 
   async function getNftUser() {
     const result = await getCurrentBatch();
@@ -81,6 +83,15 @@ export default function Dashboard() {
     fetchRewards();
   }, [address]);
 
+  useEffect(() => {
+    if (nftByBatch && nftByBatch.some(value => value > 0)) {
+      setTemNft(true);
+    } else {
+      setTemNft(false);
+    }
+  }, [nftByBatch]);
+  
+
   return (
     <>
       {error && <Error msg={error} onClose={clearError} />}
@@ -93,9 +104,12 @@ export default function Dashboard() {
       <div className="w-full sm:max-w-[90%] max-w-[98%] m-auto p-4 h-full">
         <div className="container max-w-[1400px] w-[98%] m-auto h-full">
           <div className="z-5 relative shadow-lg shadow-black flex flex-col items-center w-[90%] p-[20px] max-w-[700px] mx-auto rounded-3xl mt-[30px]">
-            <p className="md:text-[26px] text-[20px] font-semibold">
-              User: {`${address?.slice(0, 10)}...${address?.slice(-8)}`}
-            </p>
+              {address?(
+                 <p className="md:text-[26px] text-[20px] font-semibold">User: <span>{`${address.slice(0, 10)}...${address?.slice(-8)}`}</span></p>
+              ):(
+                <p className="md:text-[26px] text-[20px] font-semibold">User: </p>
+              )}
+            
             <p className="md:text-[80px] text-[50px] font-bold text-[#3a6e01]">
               {String(donationReward / BigInt(10 ** 6))}$
             </p>
@@ -128,13 +142,28 @@ export default function Dashboard() {
     <div className="mt-4 w-[90%]">
       <p className="font-semibold text-xl">You Have</p>
       <div className="h-40 overflow-y-scroll w-full relative">
-        {nftByBatch?.map((value, index) =>
-          value > 0 ? (
-            <p key={index} className="p-2">
-              Batch #{index + 1}: {value.toString()} NFT's
-            </p>
-          ) : null
-        )}
+      {nftByBatch?.map((value, index) => {
+  // Chame a função hasNft() se o valor for maior que 
+
+        return value > 0 ? (
+          <p key={index} className="p-2">
+            Batch #{index + 1}: {value.toString()} NFT's
+          </p>
+        ) : null;
+      })}
+
+      {temNft?(
+        ""
+      ):(
+        <>
+        <div className="flex flex-col items-center justify-center p-[12px] mt-[10px]">
+          <FaRegSadTear className="text-[40px] text-red-700"></FaRegSadTear>
+          <p>Sorry</p>
+          <p>You don't have Nft's</p>
+        </div>
+        </>
+      )}
+
       </div>
     </div>
   </div>

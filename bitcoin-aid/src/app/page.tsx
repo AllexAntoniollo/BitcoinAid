@@ -84,7 +84,6 @@ export default function Home() {
         let etherValue = ethers.formatEther(result);
         const etherNumber = parseFloat(etherValue);
         await setAllowance(etherNumber);
-        console.log("Total etherValue %d", etherNumber);
       } else {
         setAllowance(0);
       }
@@ -361,7 +360,7 @@ export default function Home() {
         <div className="mt-[50px] w-full lg:max-w-[55%] max-w-[100%] border-l-2 border-[#282722] p-8 ">
           {poolBalanceValue ? (
             <p className="font-semibold text-[35px] lg:text-[46px] w-full">
-              {ethers.formatEther(poolBalanceValue)}
+              {Number(ethers.formatEther(poolBalanceValue)).toFixed(2)}
               <span className="text-[#d79920]">BTCA</span>
             </p>
           ) : (
@@ -466,7 +465,7 @@ export default function Home() {
                   <>
                     <p className="text-[25px] mt-[14px]">Total Contributed</p>
                     <span className="font-semibold text-[22px]">
-                      {Number(userBalanceValue) / 1000000} $
+                      {(Number(userBalanceValue) / 1000000).toFixed(2)} $
                     </span>
                   </>
                 ) : (
@@ -507,7 +506,7 @@ export default function Home() {
                 {userBalanceValue !== undefined && userBalanceValue !== null ? (
                   <>
                     <p className="font-Agency text-center text-[45px] mt-[15px]">
-                      {balanceClaimed.toString()}
+                      {balanceClaimed.toFixed(2)}
                       <span className="text-[#d79920]">$</span>
                     </p>
                     <p className="font-Agency text-center text-[20px] mt-[-15px]">
@@ -589,7 +588,7 @@ export default function Home() {
                   MAX
                 </button>
                 <p className="flex items-end justify-end mt-[-23px] mr-[15px]">
-                  ${(Number(value) * tokenPrice).toFixed(2)}
+                  ${Math.floor((Number(value) * tokenPrice) * 100) / 100}
                 </p>
                 <div className="w-full flex flex-col items-center mb-[15px] mt-[10px]">
                   {Number(allowance) >= Number(value) ? (
