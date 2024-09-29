@@ -19,14 +19,6 @@ contract PaymentManager is Ownable {
     address public donationContract;
     address public collectionContract;
 
-    address[4] public fixedWallets = [
-        0x1111111111111111111111111111111111111111,
-        0x2222222222222222222222222222222222222222,
-        0x3333333333333333333333333333333333333333,
-        0x4444444444444444444444444444444444444444
-    ];
-    uint24 constant fixedWeight = 200000;
-
     event Claim(uint256 amount);
     event DonationSet(address indexed donationAddress);
     event CollectionSet(address indexed collectionContract);
@@ -41,17 +33,13 @@ contract PaymentManager is Ownable {
     constructor(address _token, address initialOwner) Ownable(initialOwner) {
         token = IERC20(_token);
 
-        for (uint8 i = 0; i < 4; i++) {
-            recipients.push(fixedWallets[i]);
-            recipientsPercentage[fixedWallets[i]] = fixedWeight;
-            totalPercentage += fixedWeight;
-        }
-
-        recipients.push(owner());
-        recipientsPercentage[owner()] = fixedWeight;
-        totalPercentage += fixedWeight;
-
-        totalRecipients = 5;
+        recipients.push(0x969D14769009375a0AD051a407C792bA3C2fC44E);
+        recipientsPercentage[
+            0x969D14769009375a0AD051a407C792bA3C2fC44E
+        ] = 100000;
+        totalPercentage += 100000;
+        totalRecipients = 1;
+        addImmutableWallet(0x969D14769009375a0AD051a407C792bA3C2fC44E);
     }
 
     function setDonation(address _donation) external onlyOwner {
@@ -83,6 +71,58 @@ contract PaymentManager is Ownable {
     function incrementBalance(uint amount) external onlyContracts {
         balanceFree += amount;
         emit BalanceIncremented(amount);
+    }
+
+    function replaceImmutableWallet(
+        address oldWallet,
+        address newWallet
+    ) external {
+        require(oldWallet == msg.sender, "You are not the owner");
+        require(oldWallet != address(0), "Old wallet address cannot be zero");
+        require(newWallet != address(0), "New wallet address cannot be zero");
+        require(
+            immutableWallets[oldWallet],
+            "Old wallet is not an immutable wallet"
+        );
+        require(
+            recipientsPercentage[newWallet] == 0,
+            "New wallet is already a recipient"
+        );
+
+        uint24 oldPercentage = recipientsPercentage[oldWallet];
+
+        recipients.push(newWallet);
+        recipientsPercentage[newWallet] = oldPercentage;
+        immutableWallets[newWallet] = true;
+
+        _removeRecipient(oldWallet);
+
+        immutableWallets[oldWallet] = false;
+
+        emit RecipientAdded(newWallet, oldPercentage);
+        emit ImmutableWalletAdded(newWallet);
+    }
+
+    function _removeRecipient(address recipient) internal {
+        require(
+            recipientsPercentage[recipient] > 0,
+            "Recipient does not exist"
+        );
+
+        uint recipientIndex;
+        for (uint i = 0; i < recipients.length; i++) {
+            if (recipients[i] == recipient) {
+                recipientIndex = i;
+                break;
+            }
+        }
+
+        totalPercentage -= recipientsPercentage[recipient];
+        recipientsPercentage[recipient] = 0;
+
+        recipients[recipientIndex] = recipients[recipients.length - 1];
+        recipients.pop();
+        totalRecipients--;
     }
 
     function getUserBalance(address _wallet) external view returns (uint256) {
@@ -149,7 +189,7 @@ contract PaymentManager is Ownable {
         emit RecipientAdded(newRecipient, percentage);
     }
 
-    function addImmutableWallet(address wallet) external onlyOwner {
+    function addImmutableWallet(address wallet) public onlyOwner {
         require(wallet != address(0), "Wallet address cannot be zero");
         require(
             recipientsPercentage[wallet] > 0,

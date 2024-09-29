@@ -14,12 +14,13 @@ contract ReservePools is Ownable {
 
     address public collection;
     address public claimWallet;
+    address public donation;
 
     event BalanceIncremented(uint256 amount);
-    event Swapped(uint256 usdAmount, uint256 btcaAmount);
     event ClaimedBTCA(address indexed user, uint256 amount);
     event CollectionSet(address indexed collectionAddress);
     event ClaimWalletSet(address indexed newClaimWallet);
+    event DonationSet(address indexed donationAddress);
 
     constructor(IERC20 _usdToken, address initialOwner) Ownable(initialOwner) {
         usdToken = _usdToken;
@@ -43,17 +44,18 @@ contract ReservePools is Ownable {
         emit CollectionSet(_collection);
     }
 
+    function setDonation(address _donation) external onlyOwner {
+        require(
+            _donation != address(0),
+            "Donation address cannot be zero address"
+        );
+        donation = _donation;
+        emit DonationSet(_donation);
+    }
+
     function incrementBalance(uint256 amount) external onlyCollection {
         virtualBalance += amount;
         emit BalanceIncremented(amount);
-    }
-
-    function swap(uint256 usdAmount) external {
-        require(usdAmount > 0, "Amount must be greater than 0");
-
-        virtualBalance -= usdAmount;
-
-        // emit Swapped(usdAmount, btcaAmount);
     }
 
     function collect(uint256 amount) external onlyAuthorized {
@@ -74,8 +76,8 @@ contract ReservePools is Ownable {
 
     modifier onlyCollection() {
         require(
-            collection == msg.sender,
-            "Only the collection contract can call this function."
+            collection == msg.sender || donation == msg.sender,
+            "Only the collection contract or the donation contract can call this function."
         );
         _;
     }

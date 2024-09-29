@@ -7,6 +7,8 @@ import "./IBTCACollection.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "./IMultiCallLayer.sol";
+import "hardhat/console.sol";
 
 contract MultiCall is Ownable, ERC1155Holder {
     using SafeERC20 for IERC20;
@@ -17,6 +19,7 @@ contract MultiCall is Ownable, ERC1155Holder {
     uint256[] public tokenIds;
     IERC20 token;
     IERC20 usdt;
+    IMultiCallLayer layer;
 
     constructor(
         address initialOwner,
@@ -31,32 +34,12 @@ contract MultiCall is Ownable, ERC1155Holder {
         usdt = IERC20(_usdt);
     }
 
-    function setQueueDistribution(address _queue) external onlyOwner {
-        queueDistribution = IQueueDistribution(_queue);
+    function setLayer(address _layer) external onlyOwner {
+        layer = IMultiCallLayer(_layer);
     }
 
-    function swap(uint amountIn) external onlyOwner returns (uint amountOut) {
-        //0xc2132D05D31c914a87C6611C10748AEb04B58e8F USDT
-        //0xbeEC09c5aE9BB732083488551BD509311507Ae7C BUBBLE
-        IERC20(0xc2132D05D31c914a87C6611C10748AEb04B58e8F).approve(
-            address(0xE592427A0AEce92De3Edee1F18E0157C05861564),
-            amountIn
-        );
-
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
-            .ExactInputSingleParams({
-                tokenIn: 0xc2132D05D31c914a87C6611C10748AEb04B58e8F,
-                tokenOut: 0xbeEC09c5aE9BB732083488551BD509311507Ae7C,
-                fee: 100,
-                recipient: address(this),
-                deadline: block.timestamp,
-                amountIn: amountIn,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
-
-        amountOut = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564)
-            .exactInputSingle(params);
+    function setQueueDistribution(address _queue) external onlyOwner {
+        queueDistribution = IQueueDistribution(_queue);
     }
 
     function depositNFT(uint256 tokenId) external onlyOwner {
@@ -92,6 +75,43 @@ contract MultiCall is Ownable, ERC1155Holder {
             usdt.safeTransfer(msg.sender, usdt.balanceOf(address(this)));
         } else {
             token.safeTransfer(msg.sender, token.balanceOf(address(this)));
+        }
+    }
+
+    function addOnQueue2() external {
+        uint256 tokenId1 = tokenIds[0];
+        uint256 tokenId2 = tokenIds[0];
+
+        removeTokenIdAtIndex(0);
+        removeTokenIdAtIndex(0);
+
+        queueDistribution.addToQueue(tokenId1);
+        queueDistribution.addToQueue(tokenId2);
+        uint queueId = BTCACollection.getCurrentBatch();
+        uint position = queueDistribution.getCurrentIndex();
+        console.log(position);
+        console.log(queueId);
+
+        queueDistribution.claim(position - 2, queueId);
+    }
+
+    function addOnQueue1() external {
+        uint256 tokenId1 = tokenIds[0];
+
+        removeTokenIdAtIndex(0);
+
+        queueDistribution.addToQueue(tokenId1);
+        uint queueId = BTCACollection.getCurrentBatch();
+        uint position = queueDistribution.getCurrentIndex();
+
+        queueDistribution.claim(position - 1, queueId);
+    }
+
+    function multicall2() external onlyOwner {
+        try layer.callAddOnQueue2() {} catch {
+            try layer.callAddOnQueue1() {} catch {
+                revert("Impossible");
+            }
         }
     }
 

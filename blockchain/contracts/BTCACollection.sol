@@ -18,6 +18,8 @@ contract BTCACollection is ERC1155, Ownable, ReentrancyGuard {
     IPaymentManager public paymentManager;
     IPaymentManager public reservePools;
     IPaymentManager public reserveBtca;
+    bool public saleStarted = false;
+
     event PaymentManagerUpdated(
         address indexed previousPaymentManager,
         address indexed newPaymentManager
@@ -30,6 +32,7 @@ contract BTCACollection is ERC1155, Ownable, ReentrancyGuard {
         address indexed previousReserveBtca,
         address indexed newReserveBtca
     );
+    event SaleStarted();
 
     constructor(
         address initialOwner,
@@ -43,6 +46,17 @@ contract BTCACollection is ERC1155, Ownable, ReentrancyGuard {
     {
         token = IERC20(_token);
         paymentManager = IPaymentManager(_paymentManager);
+    }
+
+    modifier saleIsActive() {
+        require(saleStarted, "Sale has not started yet");
+        _;
+    }
+
+    function startSale() external onlyOwner {
+        require(!saleStarted, "Sale has already started");
+        saleStarted = true;
+        emit SaleStarted();
     }
 
     function setURI(string memory newuri) public onlyOwner {
@@ -77,23 +91,18 @@ contract BTCACollection is ERC1155, Ownable, ReentrancyGuard {
         return getBatchPrice(currentBatch);
     }
 
-    function mint(uint256 amount) public nonReentrant {
-        if (amount + totalMintedInBatch > batchSize) {
-            amount = batchSize - totalMintedInBatch;
-        }
-
+    function mint() public nonReentrant saleIsActive {
         uint256 price = getCurrentBatchPrice();
-        uint256 totalPrice = price * amount * 10 ** 6;
+        uint256 totalPrice = price * 10 ** 6;
         uint batch = currentBatch;
-        updateBatch(amount);
-        _mint(msg.sender, batch, amount, "");
+        updateBatch(1);
+        _mint(msg.sender, batch, 1, "");
 
         token.safeTransferFrom(msg.sender, address(this), totalPrice);
         token.safeTransfer(address(paymentManager), totalPrice / 4);
         token.safeTransfer(address(reserveBtca), totalPrice / 4);
         token.safeTransfer(address(reservePools), totalPrice / 2);
 
-        // Atualiza os saldos no sistema de pagamento
         paymentManager.incrementBalance(totalPrice / 4);
         reserveBtca.incrementBalance(totalPrice / 4);
         reservePools.incrementBalance(totalPrice / 2);
