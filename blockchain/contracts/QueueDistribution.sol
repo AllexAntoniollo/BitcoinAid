@@ -6,7 +6,6 @@ import "./IBTCACollection.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IUniswapOracle.sol";
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
@@ -73,6 +72,17 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
         currentIndex = 1;
         uniswapOracle = IUniswapOracle(_oracle);
         lastUnpaidQueue = BTCACollection.getCurrentBatch();
+    }
+
+    function getLastUnpaidQueue() external view returns (uint) {
+        uint last = lastUnpaidQueue;
+        while (queueSizeByBatch[last] == 0 && last <= 100) {
+            ++last;
+        }
+        if (last == 101) {
+            return BTCACollection.getCurrentBatch();
+        }
+        return last;
     }
 
     function setDonationContract(address _donation) external onlyOwner {
@@ -149,7 +159,7 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
             "You can only claim your own entry"
         );
 
-        uint256 tokenPrice = uniswapOracle.returnPrice();
+        uint256 tokenPrice = uniswapOracle.returnPrice(1e18);
 
         uint256 requiredBalance = getRequiredBalanceForNextFour();
         require(
@@ -245,6 +255,8 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
             processPaymentForIndex(index, tokenPrice);
         }
         uint amount = tokensToWithdraw[msg.sender];
+        require(amount > 0, "Nothing to claim");
+
         tokensToWithdraw[msg.sender] = 0;
         token.safeTransfer(msg.sender, amount);
 
@@ -312,7 +324,7 @@ contract QueueDistribution is ERC1155Holder, Ownable, ReentrancyGuard {
     }
 
     function getRequiredBalanceForNextFour() public view returns (uint256) {
-        uint256 tokenPrice = uniswapOracle.returnPrice();
+        uint256 tokenPrice = uniswapOracle.returnPrice(1e18);
         uint256 totalRequiredBalance = 0;
         uint256 counter = 0;
         uint256 currentBatch = lastUnpaidQueue;

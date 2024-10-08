@@ -9,26 +9,21 @@ contract ReserveBTCA is Ownable {
     using SafeERC20 for IERC20;
 
     IERC20 public usdToken;
-    IERC20 public btcaToken;
 
     uint256 public virtualBalance;
 
     address public collection;
     address public claimWallet;
-
+    address public donation;
     event BalanceIncremented(uint256 amount);
-    event Swapped(uint256 usdAmount, uint256 btcaAmount);
     event ClaimedBTCA(address indexed user, uint256 amount);
     event CollectionSet(address indexed collectionAddress);
+    event DonationSet(address indexed donationAddress);
+
     event ClaimWalletSet(address indexed newClaimWallet);
 
-    constructor(
-        IERC20 _usdToken,
-        IERC20 _btcaToken,
-        address initialOwner
-    ) Ownable(initialOwner) {
+    constructor(IERC20 _usdToken, address initialOwner) Ownable(initialOwner) {
         usdToken = _usdToken;
-        btcaToken = _btcaToken;
     }
 
     function setClaimWallet(address _claimWallet) external onlyOwner {
@@ -49,22 +44,23 @@ contract ReserveBTCA is Ownable {
         emit CollectionSet(_collection);
     }
 
+    function setDonation(address _donation) external onlyOwner {
+        require(
+            _donation != address(0),
+            "Donation address cannot be zero address"
+        );
+        donation = _donation;
+        emit CollectionSet(_donation);
+    }
+
     function incrementBalance(uint256 amount) external onlyCollection {
         virtualBalance += amount;
         emit BalanceIncremented(amount);
     }
 
-    function swap(uint256 usdAmount) external {
-        require(usdAmount > 0, "Amount must be greater than 0");
-
-        virtualBalance -= usdAmount;
-
-        // emit Swapped(usdAmount, btcaAmount);
-    }
-
-    function collectBTCA() external onlyAuthorized {
-        require(btcaToken.balanceOf(address(this)) > 0, "Insufficient funds");
-        btcaToken.safeTransfer(msg.sender, btcaToken.balanceOf(address(this)));
+    function collect() external onlyAuthorized {
+        require(usdToken.balanceOf(address(this)) > 0, "Insufficient funds");
+        usdToken.safeTransfer(msg.sender, usdToken.balanceOf(address(this)));
     }
 
     modifier onlyAuthorized() {
@@ -77,8 +73,8 @@ contract ReserveBTCA is Ownable {
 
     modifier onlyCollection() {
         require(
-            collection == msg.sender,
-            "Only the collection contract can call this function."
+            collection == msg.sender || msg.sender == donation,
+            "Only the collection contract or the donation contract can call this function."
         );
         _;
     }

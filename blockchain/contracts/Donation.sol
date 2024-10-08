@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IBurnable.sol";
 import "./IPaymentManager.sol";
-import "hardhat/console.sol";
 import "./IUniswapOracle.sol";
 import "./IQueueDistribution.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 library Donation {
     struct UserDonation {
@@ -25,17 +25,23 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
 
     event UserDonated(address indexed user, uint amount);
     event UserClaimed(address indexed user, uint amount);
+    event Burn(uint indexed amount);
 
-    uint24 public limitPeriod = 15 days;
+    uint24 public constant limitPeriod = 2 minutes;
 
     IUniswapOracle public uniswapOracle;
     IBurnable private immutable token;
+    IBurnable private immutable usdt;
 
     uint256 public distributionBalance;
     IPaymentManager public paymentManager;
+    IPaymentManager public reservePools;
+    IPaymentManager public reserveBtca;
+
     IQueueDistribution public queueDistribution;
 
     uint256 public totalBurned;
+    uint24 private fee = 3000;
     uint256 public totalDistributedForUsers;
     uint256 public totalForDevelopment;
     uint256 public totalPaidToUsers;
@@ -45,24 +51,41 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
 
     constructor(
         address _token,
+        address _usdt,
         address initialOwner,
         address _paymentManager,
+        address _reserveBtca,
+        address _reservePools,
         address oracle,
         address queue
     ) Ownable(initialOwner) {
         token = IBurnable(_token);
+        usdt = IBurnable(_usdt);
         paymentManager = IPaymentManager(_paymentManager);
+        reservePools = IPaymentManager(_reservePools);
+        reserveBtca = IPaymentManager(_reserveBtca);
+
         uniswapOracle = IUniswapOracle(oracle);
         queueDistribution = IQueueDistribution(queue);
     }
 
-    function addDistributionFunds(uint256 amount) external onlyOwner {
-        token.safeTransferFrom(msg.sender, address(this), amount);
-        distributionBalance += (amount * 99) / 100;
+    function setUniswapFee(uint24 _fee) external onlyOwner {
+        fee = _fee;
     }
 
-    function changeMinTime(uint24 time) external {
-        limitPeriod = time;
+    function setPaymentMnager(address _paymentManager) external onlyOwner {
+        paymentManager = IPaymentManager(_paymentManager);
+    }
+        function setReserveBtca(address _reserveBtca) external onlyOwner {
+        reserveBtca = IPaymentManager(_reserveBtca);
+    }
+        function setReservePools(address _reservePools) external onlyOwner {
+        reservePools = IPaymentManager(_reservePools);
+    }
+
+    function addDistributionFunds(uint256 amount) external onlyOwner {
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        distributionBalance += amount;
     }
 
     function setQueue(address _queue) external onlyOwner {
@@ -86,10 +109,12 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     }
 
     function donate(uint128 amount, bool fifteenDays) external nonReentrant {
-        uint amountBurned = (amount * 99) / 100;
-        uint amountUsdt = (uniswapOracle.returnPrice() * amount) / 1e18;
+        uint amountUsdt = uniswapOracle.returnPrice(amount);
 
-        require(amountUsdt >= 10e6, "Amount must be greater than 10 dollars");
+        require(
+            amountUsdt >= 10 * 10 ** 6,
+            "Amount must be greater than 10 dollars"
+        );
         uint totalPool = distributionBalance;
 
         users[msg.sender].balance += amountUsdt;
@@ -104,16 +129,16 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
             : 3;
 
         token.safeTransferFrom(msg.sender, address(this), amount);
-        nextPoolFilling += amountBurned / 2;
-        uint256 burnedAmount = amountBurned / 5;
+        nextPoolFilling += amount / 2;
+        uint256 burnedAmount = amount / 5;
         token.burn(burnedAmount);
         totalBurned += burnedAmount;
-
-        uint256 distributedAmount = (amountBurned * 3) / 10;
+        emit Burn(burnedAmount);
+        uint256 distributedAmount = (amount * 3) / 10;
         totalDistributedForUsers += distributedAmount;
         token.safeTransfer(address(queueDistribution), distributedAmount);
-        queueDistribution.incrementBalance((distributedAmount * 99) / 100);
-        emit UserDonated(msg.sender, amountBurned);
+        queueDistribution.incrementBalance(distributedAmount);
+        emit UserDonated(msg.sender, amount);
     }
 
     function refillPool() external onlyOwner {
@@ -143,7 +168,7 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
             "Insufficient distribution balance"
         );
 
-        uint currentPrice = uniswapOracle.returnPrice();
+        uint currentPrice = uniswapOracle.returnPrice(1e18);
         uint totalTokensToSend = (totalValueInUSD * 1e18) / currentPrice;
 
         require(
@@ -156,10 +181,15 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         users[msg.sender].balance = 0;
 
         uint256 paymentManagerAmount = (totalTokensToSend / 20);
-        paymentManager.incrementBalance((paymentManagerAmount * 99) / 100);
-        token.safeTransfer(address(paymentManager), paymentManagerAmount);
-        totalForDevelopment += paymentManagerAmount;
+        uint amountOut = swapToken(paymentManagerAmount);
+        paymentManager.incrementBalance(amountOut / 2);
+        reserveBtca.incrementBalance(amountOut / 4);
+        reservePools.incrementBalance(amountOut / 4);
 
+        usdt.safeTransfer(address(paymentManager), amountOut / 2);
+        usdt.safeTransfer(address(reserveBtca), amountOut / 4);
+        usdt.safeTransfer(address(reservePools), amountOut / 4);
+        totalForDevelopment += paymentManagerAmount;
         uint256 userAmount = (totalTokensToSend * 95) / 100;
         token.safeTransfer(msg.sender, userAmount);
         totalPaidToUsers += userAmount;
@@ -167,6 +197,28 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
         userDonation.totalClaimed += totalValueInUSD;
 
         emit UserClaimed(msg.sender, totalTokensToSend);
+    }
+
+    function swapToken(uint amountIn) internal returns (uint amountOut) {
+        token.approve(
+            address(0xE592427A0AEce92De3Edee1F18E0157C05861564),
+            amountIn
+        );
+
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
+                tokenIn: address(token),
+                tokenOut: address(usdt),
+                fee: fee,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+        amountOut = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564)
+            .exactInputSingle(params);
     }
 
     function getUser(
