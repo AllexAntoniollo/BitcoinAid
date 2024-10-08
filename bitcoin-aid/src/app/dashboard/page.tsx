@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [alert, setAlert] = useState("");
   const [temNft, setTemNft] = useState<boolean>(false);
+  const [claimOpen, setClaimOpen] = useState<boolean>(false); 
 
   async function getNftUser() {
     const result = await getCurrentBatch();
@@ -52,6 +53,10 @@ export default function Dashboard() {
 
       await getNftUser();
     }
+  }
+
+  async function handleClaimOpen() {
+    setClaimOpen(prevValue => !prevValue);
   }
 
   async function handleClaim() {
@@ -178,15 +183,66 @@ export default function Dashboard() {
               <p>Total BTCA:</p>
               <p>{String(btcaReward / BigInt(10 ** 18))}</p>
             </div>
-            <button
-              onClick={handleClaim}
+            {btcaReward?(
+              <button
+              onClick={handleClaimOpen}
               className="glossy_claim hover:bg-[#346301] mx-auto p-[10px] w-[200px] rounded-full mt-[10px] glossy_cta"
             >
               Claim Now
             </button>
+            ):(
+              <button
+              className="cursor-not-allowed mx-auto p-[10px] w-[200px] rounded-full mt-[10px] border-2 border-white"
+              >
+              Claim Now
+              </button>
+            )}
+            
           </div>
         </div>
       </div>
+      
+      
+  {claimOpen || btcaReward?(
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black opacity-90"
+      onClick={handleClaimOpen}
+    ></div>
+    <div className="relative bg-[#201f1b] border-2 border-[#eda921] p-6 rounded-lg shadow-lg w-[90%] max-w-lg z-10 glossy">
+      <button
+        className="absolute top-4 right-4 text-red-600"
+        onClick={handleClaimOpen}
+      >
+        <p className="font-bold">X</p>
+      </button>
+      <div className="w-[100%] items-center justify-center text-center">
+        <p className="font-semibold text-[26px] items-center justify-center text-green-500">Be happy!</p>
+        <p className="text-[22px] text-center"> While you were away your NFTs generated income for you</p>
+        <Image
+        src="/images/NFTSATOSHI.png"
+        alt="NFT"
+        layout="responsive"
+        width={300}
+        height={300}
+        className="mx-auto max-w-[60%] max-h-[55%]"
+        />
+
+        <p className="mt-[20px] text-[22px] font-semibold">You Have {String(btcaReward / BigInt(10 ** 18))} BTCA to Withdraw</p>
+      </div>
+      <button
+          onClick={handleClaim}
+          className="flex m-auto items-center justify-center glossy_claim hover:bg-[#346301] mx-auto p-[10px] w-[200px] rounded-full mt-[10px] glossy_cta"
+        >
+          Claim Now
+        </button>
+      </div>
+      </div>
+  ):(
+    ""
+  )}
+        
     </>
+    
   );
 }

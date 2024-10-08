@@ -8,6 +8,7 @@ import Error from "@/componentes/erro";
 import Alert from "@/componentes/alert";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { IoTriangle } from "react-icons/io5";
 import {
   getQueue,
   getCurrentBatch,
@@ -23,7 +24,7 @@ import {
   claimQueue,
   totalMintedOnBatch,
   getTokenPrice,
-  allowanceUsdt,
+  getAllowanceUsdt,
   getNftUserByBatch,
 } from "@/services/Web3Services";
 import { nftQueue } from "@/services/types";
@@ -36,7 +37,7 @@ const SimpleSlider = () => {
   const [queueData, setQueueData] = useState<nftQueue[][]>([]);
   const [blockData, setBlockData] = useState<blockData[][]>([]);
   const [nextPaid, setNextPaid] = useState<nftQueue[]>();
-  const [balance, setBalance] = useState<number>();
+  const [balance, setBalance] = useState<number>(0);
   const [valuesNextFour, setValuesNextFour] = useState<number[]>([]);
   const [currentBatch, setCurrentBatch] = useState<number>(0);
   const [addNftOpen, setNftAddOpen] = useState<boolean>(false);
@@ -52,6 +53,7 @@ const SimpleSlider = () => {
   const [newQueue, setNewQueue] = useState<blockData[][]>([]);
   const [priceToken, setPriceToken] = useState<number>(0);
   const [lastBatchWithNft, setLastBatchWithNft] = useState<number>(0);
+  const [allowanceUsdt, setAllowanceUsdt] = useState<number>(0);
 
   async function getLastBatch(){
     const result = await getCurrentBatch();
@@ -70,12 +72,13 @@ const SimpleSlider = () => {
     }
   }
 
+  async function handleApproveOpen(){
+    setApproveToMintOpen(prevValue => !prevValue);
+  }
 
   async function verificaApprove(){
-    console.log("chamou verificaçao");
     if(address){
-      const result = await allowanceUsdt(address);
-      if(result >= nftCurrentPrice){
+      if(allowanceUsdt >= nftCurrentPrice){
         buyNft();
       }else{
         goApproveMint();
@@ -123,6 +126,13 @@ const SimpleSlider = () => {
 
   useEffect(() =>{
     totalSendInBatch();
+    const fetchAllowance = async ()=>{
+      if(address){
+        const result = await getAllowanceUsdt(address);
+        setAllowanceUsdt(result);
+      }
+    }
+    fetchAllowance();
   })
 
   const handleApproveQueueOpen = () => {
@@ -177,9 +187,7 @@ const SimpleSlider = () => {
 
   const doApproveMint = () => {
     console.log("chamou a funcao");
-    const priceInWei: number =
-      Number(nftCurrentPrice);
-      console.log("Valor da nft passado: ", priceInWei);
+    const priceInWei: number = Number(nftCurrentPrice)*100000;
     if (address) {
       approveToMintNft(priceInWei);
     } else {
@@ -349,6 +357,14 @@ function getPaymentAmountForQueue(queueIndex: number):number {
   return valueNft;
 }
 
+async function getBalanceFree(){
+  console.log("Chamou");
+    const result = await balanceFree();
+    if(result){
+      setBalance(Number(result));
+    }
+}
+
 async function veSePaga(queue: nftQueue[][]) {
   let balanceToPaidNfts = Number(await balanceFree());
   balanceToPaidNfts = (balanceToPaidNfts / 10 ** 18) * Number(priceToken);
@@ -463,6 +479,7 @@ async function getPriceToken() {
 }
   useEffect(() =>{
       getPriceToken();
+      getBalanceFree();
   })
 
   useEffect(() =>{
@@ -495,13 +512,34 @@ async function getPriceToken() {
             className="mx-auto max-w-[60%] max-h-[55%]"
           ></Image>
           <p>{minted !== undefined? `${minted}/100` : "Loading..."}</p>
-          <p className="mx-auto text-[20px] mt-[10px] font-semibold">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."}</p>
-          <button
-                onClick={verificaApprove}
+          <div className="mt-[15px] w-[100%] flex flex-row items-center justify-center">
+          <p className=" text-[20px] font-semibold">{nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."} </p>
+          <IoTriangle className="ml-[10px] text-green-600 "></IoTriangle><p>{nftCurrentPrice ? (Number(nftCurrentPrice)-10)*10:"..."}%</p>
+          </div>
+          {allowanceUsdt >= nftCurrentPrice ? (
+              <button
+                onClick={buyNft}
                 className=" hover:bg-[#a47618] mx-auto p-[10px] w-[200px] bg-[#d79920] rounded-full mt-[10px] glossy_cta"
               >
                 Buy Nft
-              </button>
+            </button>
+          ):(
+            <>
+            <button
+                onClick={handleApproveOpen}
+                className=" hover:bg-[#299508] mx-auto p-[10px] w-[200px] rounded-full mt-[10px] glossy_claim"
+              >
+                Approve USDT
+            </button>
+              <button
+                
+                className="cursor-not-allowed mx-auto p-[10px] w-[200px] border-[2px] border-white rounded-full mt-[10px] glossy_cta"
+              >
+                Buy Nft
+            </button>
+            </>
+          )}
+          
            
           </div>
         </div>
@@ -521,16 +559,25 @@ async function getPriceToken() {
             </div>
           </div>
         </div>
-
+        
         <div className=" mx-auto max-w-[100%] overflow-y-auto slider-container p-2 mt-[50px]">
-          <div className="w-[100%] flex flex-row items-center mb-[10px]">
-            <div className="w-[10px] h-[10px] bg-yellow-500 ml-[15px]"></div>
-            <p className="ml-[5px]">All Nfts</p>
-            <div className=" bg-[#008510] w-[10px] h-[10px]  ml-[15px]"></div>
-            <p className="ml-[5px]">Next paid nfts</p>
-            <div className="bg-blue-600 w-[10px] h-[10px] ml-[15px]"></div>
-            <p className="ml-[5px]">Your Nft's</p>
+          <div className="w-[100%] flex lg:flex-row flex-col items-center mb-[30px] justify-end">
+
+          <div className="flex lg:w-[50%] w-[100%] p-6 border-l-2 border-gray-600 flex-col">
+            <p className="text-[40px] font-semibold">{((balance/10**18)*priceToken).toFixed(2)}$ </p>
+            <p className="text-[16px] text-[#d79920] font-semibold">Balance to Paid Nft</p>
+          </div>  
+
+            <div className="lg:w-[40%] w-[100%] flex flex-row items-center lg:justify-center ">
+              <div className="w-[10px] h-[10px] bg-yellow-500 ml-[15px]"></div>
+              <p className="ml-[5px]">All Nfts</p>
+              <div className=" bg-[#008510] w-[10px] h-[10px]  ml-[15px]"></div>
+              <p className="ml-[5px]">Next paid nfts</p>
+              <div className="bg-blue-600 w-[10px] h-[10px] ml-[15px]"></div>
+              <p className="ml-[5px]">Your Nft's</p>
+            </div>
           </div>
+          
         </div>
           {newQueue.map((dataSet, index) => {
             const hasUserData = dataSet.some((item) => item.user);
@@ -546,11 +593,11 @@ async function getPriceToken() {
                 {...settings(dataSet.length)}
                 className=" w-full sm:max-w-[90%] max-w-[95%] lg:ml-[30px] ml-[10px] h-full mt-[10px] lg:text-[16px] sm:text-[12px] text-[10px] mb-[120px]">
                 {dataSet.map((item, itemIndex) => (
-                  item.user && item.nextPaied === false && item.user.toLocaleLowerCase() === address?(
+                  item.user && item.nextPaied === false && item.user === address?(
                   <div key={itemIndex} className="">
                     <div className="mt-[50px] nftUserPiscando p-2 lg:p-4 caixa3d transform transition-transform">
                       <div className="">
-                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : "N/A"}</p>
+                      <p className="font-semibold">{address && item.user == address ? "Your" : "N/A"}</p>
                         <h3>Position in the queue: {itemIndex + 1}</h3>
                       </div>
                       <p>
@@ -568,7 +615,7 @@ async function getPriceToken() {
                       Index: {Number(item.index)}
                       </p>
                       <p>
-                      Will Received: {getPaymentAmountForQueue(Number(item.batchLevel))}$
+                      Will Receive: {getPaymentAmountForQueue(Number(item.batchLevel))}$
                       </p>
                     </div>
                   </div>
@@ -578,8 +625,8 @@ async function getPriceToken() {
                         <div className="">
                         <p className="font-semibold">
                               {address &&
-                              item.user.toLocaleLowerCase() ==
-                                address.toLocaleLowerCase()
+                              item.user ==
+                                address
                                 ? "Your"
                                 : ""}
                             </p>
@@ -598,13 +645,13 @@ async function getPriceToken() {
                           </p>
                           <p>Index: {Number(item.index)}</p>
                           <p className="font-semibold">
-                             Will Received {Number(getPaymentAmountForQueue(
+                             Will Receive: {Number(getPaymentAmountForQueue(
                                   Number(item.batchLevel)
                                 ))}$
                           </p>
 
 
-                           {item.user.toLocaleLowerCase() === address ? (
+                           {item.user === address? (
                             <button
                               onClick={() =>
                                 doClaimQueue(
@@ -621,11 +668,11 @@ async function getPriceToken() {
                           )}
                       </div>
                     </div>
-                  ) : item.user && item.nextPaied === false && item.user.toLocaleLowerCase() != address?(
+                  ) : item.user && item.nextPaied === false && item.user != address?(
                     <div key={itemIndex} className="">
                     <div className="mt-[50px] nftPiscando p-2 lg:p-4 caixa3d transform transition-transform">
                       <div className="">
-                      <p className="font-semibold">{address && item.user.toLocaleLowerCase() == address.toLocaleLowerCase() ? "Your" : ""}</p>
+                      <p className="font-semibold">{address && item.user == address ? "Your" : ""}</p>
                         <h3>Position in the queue: {itemIndex + 1}</h3>
                       </div>
                       <p>
@@ -643,7 +690,7 @@ async function getPriceToken() {
                       Index: {Number(item.index)}
                       </p>
                       <p>
-                      Will Received: {getPaymentAmountForQueue(Number(item.batchLevel))}$
+                      Will Receive: {getPaymentAmountForQueue(Number(item.batchLevel))}$
                       </p>
                     </div>
                   </div>
@@ -698,8 +745,8 @@ async function getPriceToken() {
               <TbLockAccess className="border-2 text-[80px] rounded-full p-[20px] border-white" />
               <p className="font-Agency text-[35px] mt-[10px]">Unlock USDT</p>
               <p className="text-center text-[18px] mt-[6px]">
-                We need your permission to move{" "}
-                {nftCurrentPrice ? `${nftCurrentPrice}$` : "Loading..."} USDT on
+                We need your permission to move
+               USDT on
                 your behalf
               </p>
               {address ? (
@@ -710,7 +757,7 @@ async function getPriceToken() {
                   Approve USDT
                 </button>
               ) : (
-                ""
+                <p className="text-red-600">You need to connect your wallet!</p>
               )}
             </div>
           </div>

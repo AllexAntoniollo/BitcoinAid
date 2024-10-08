@@ -13,6 +13,7 @@ const COLLECTION_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ADDRESS;
 const USDT_ADDRESS = process.env.NEXT_PUBLIC_USDT_ADDRESS;
 const ORACLE_ADDRESS = process.env.NEXT_PUBLIC_ORACLE_ADDRESS;
 const RPC_POLYGON = process.env.NEXT_PUBLIC_RPC_POLYGON;
+
 import { nftQueue } from "./types";
 import { promises } from "dns";
 
@@ -484,7 +485,7 @@ export async function totalMintedOnBatch() {
   return result;
 }
 
-export async function allowanceUsdt(address:string){
+export async function getAllowanceUsdt(address:string){
   const provider = await getProvider();
   const signer = await provider.getSigner();
 
@@ -494,3 +495,4 @@ export async function allowanceUsdt(address:string){
 
   return (Number(result))/10**6;
 }
+
