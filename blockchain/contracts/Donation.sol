@@ -76,10 +76,12 @@ contract DonationBTCA is ReentrancyGuard, Ownable {
     function setPaymentMnager(address _paymentManager) external onlyOwner {
         paymentManager = IPaymentManager(_paymentManager);
     }
-        function setReserveBtca(address _reserveBtca) external onlyOwner {
+
+    function setReserveBtca(address _reserveBtca) external onlyOwner {
         reserveBtca = IPaymentManager(_reserveBtca);
     }
-        function setReservePools(address _reservePools) external onlyOwner {
+
+    function setReservePools(address _reservePools) external onlyOwner {
         reservePools = IPaymentManager(_reservePools);
     }
 
